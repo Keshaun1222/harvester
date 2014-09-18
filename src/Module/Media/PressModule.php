@@ -11,16 +11,17 @@ use XPathSelector\Exception\NotFoundException;
 
 class PressModule extends Module
 {
-    public function publishArticle($articleName, $articleBody, $articleCategory)
+    public function publishArticle($articleName, $articleBody, Entity\Country $articleLocation, $articleCategory)
     {
         $this->getClient()->checkLogin();
 
-        $request = $this->getClient()->post('write-article');
+        $request = $this->getClient()->post('main/write-article');
         $request->getHeaders()
-            ->set('Referer', $this->getClient()->getBaseUrl().'/write-article');
+            ->set('Referer', $this->getClient()->getBaseUrl().'/main/write-article');
         $request->addPostFields([
             'article_name' => $articleName,
             'article_body' => $articleBody,
+            'article_location' => $articleLocation->getId(),
             'article_category' => $articleCategory,
             '_token'  => $this->getSession()->getToken()
         ]);
@@ -36,10 +37,10 @@ class PressModule extends Module
     public function editArticle(Article $article, $articleName, $articleBody, $articleCategory)
     {
         $this->getClient()->checkLogin();
-        $request = $this->getClient()->post('edit-article/'.$article->getId());
+        $request = $this->getClient()->post('main/edit-article/'.$article->getId());
         $request
             ->getHeaders()
-            ->set('Referer', $this->getClient()->getBaseUrl().'/edit-article/'.$article->getId());
+            ->set('Referer', $this->getClient()->getBaseUrl().'/main/edit-article/'.$article->getId());
 
         $request->addPostFields([
             'commit' => 'Edit',

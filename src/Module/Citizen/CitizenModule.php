@@ -153,11 +153,11 @@ class CitizenModule extends Module
         }
         
         $info = $sidebar->select('div[1]');
+        $result['citizenship'] = $countries->findOneByName((string)$info->select('a[3]/img[1]/@title')->extract());
         $result['residence'] = array(
             'country' => $countries->findOneByName($info->select('a[1]/@title')->extract()),
             'region'  => $regions->findOneByName($info->select('a[2]/@title')->extract()),
         );
-        $result['citizenship'] = $countries->findOneByName((string)$info->select('a[3]/img[1]/@title')->extract());
         
         if (!isset($result['residence']['country'], $result['residence']['region'], $result['citizenship'])) {
             throw new ScrapeException;

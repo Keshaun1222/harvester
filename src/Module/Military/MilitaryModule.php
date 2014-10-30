@@ -278,10 +278,6 @@ class MilitaryModule extends Module
             throw new ScrapeException;
         }
         
-        $members = $header->select('div[@class="header_content"]/h2/big')->extract();
-        $members = explode(' ', $members);
-        $members = (int)$members[0];
-        
         $countries = $this->getEntityManager()->getRepository('Erpk\Common\Entity\Country');
         $country = $header->select('div[@class="header_content"]/div[@class="details"]/a[1]/img/@alt')->extract();
         $country = $countries->findOneByName($country);
@@ -308,8 +304,7 @@ class MilitaryModule extends Module
             'avatar'     => $avatar,
             'created_at' => isset($created[0]) ? strtr($created[0], '/', '-') : null,
             'location'   => $country,
-            'members'    => $members,
-            'about'      => $header->select('//span[@id="editable_about"]')->extract(),
+            'about'      => trim($header->select('//*[@id="editable_about"]')->extract()),
             'commander'  =>  array(
                 'id'         =>  (int)substr($url, strrpos($url, '/')+1),
                 'name'       =>  $header->select(

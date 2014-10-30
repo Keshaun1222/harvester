@@ -189,7 +189,7 @@ class CitizenModule extends Module
                 $length = strrpos($url, '/')-$start;
                 $result['party'] = array(
                     'id'    =>  (int)substr($url, $start, $length),
-                    'name'  =>  $party->select('div/img/@alt')->extract(),
+                    'name'  =>  trim($party->select('div[1]/span/a')->extract()),
                     'avatar'=>  Selector\Filter::normalizeAvatar($party->select('div/img/@src')->extract()),
                     'role'  =>  trim($party->select('h3[1]')->extract())
                 );

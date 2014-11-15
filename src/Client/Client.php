@@ -23,10 +23,10 @@ class Client extends GuzzleClient implements ClientInterface
         );
         
         $this->getConfig()->set('curl.options', [
-            CURLOPT_ENCODING          => '',
-            CURLOPT_FOLLOWLOCATION    => false,
-            CURLOPT_CONNECTTIMEOUT_MS => 3000,
-            CURLOPT_TIMEOUT_MS        => 5000
+            CURLOPT_ENCODING       => '',
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT        => 20
         ]);
         
         $this->getDefaultHeaders()

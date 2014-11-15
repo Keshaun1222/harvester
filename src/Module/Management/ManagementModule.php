@@ -55,14 +55,13 @@ class ManagementModule extends Module
         $request->getHeaders()
             ->set('X-Requested-With', 'XMLHttpRequest')
             ->set('Referer', $this->getClient()->getBaseUrl().'/main/messages-compose/'.$citizenId);
-        $request->addPostFields(
-            array(
-                '_token'          => $this->getSession()->getToken(),
-                'citizen_name'    => $citizenId,
-                'citizen_subject' => $subject,
-                'citizen_message' => $content
-            )
-        );
+
+        $request->addPostFields([
+            '_token'          => $this->getSession()->getToken(),
+            'citizen_name'    => $citizenId,
+            'citizen_subject' => $subject,
+            'citizen_message' => $content
+        ]);
 
         $response = $request->send();
         return $response->getBody(true);

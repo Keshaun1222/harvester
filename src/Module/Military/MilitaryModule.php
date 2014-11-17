@@ -362,7 +362,7 @@ class MilitaryModule extends Module
      * @param  int  $side        One of the constants:
      *                               MilitaryModule::SIDE_ATTACKER or
      *                               MilitaryModule::SIDE_DEFENDER or
-     *                               null when to choose automatically
+     *                               null to choose automatically
      * @return array             Result information about effect
      */
     public function fight(Campaign $campaign, $side = null)
@@ -408,12 +408,11 @@ class MilitaryModule extends Module
     protected function chooseSide(Campaign $campaign, Country $country)
     {
         if ($campaign->isResistance()) {
-            $request = $this->getClient()->get(
+            $this->getClient()->get(
                 'military/battlefield-choose-side/'.$campaign->getId().'/'.$country->getId()
-            );
-            $response = $request->send();
+            )->send();
         } else {
-            throw new Exception('Cannot choose side in resistance war');
+            throw new \Exception('Cannot choose side in ordinary campaign (without changing location).');
         }
     }
 

@@ -14,8 +14,9 @@ use Erpk\Common\Entity\Country;
 
 class MilitaryModule extends Module
 {
-    const SIDE_ATTACKER = 0;
-    const SIDE_DEFENDER = 1;
+    const SIDE_AUTO = 0;
+    const SIDE_ATTACKER = 1;
+    const SIDE_DEFENDER = 2;
 
     /**
      * Returns list of active campaigns
@@ -362,10 +363,10 @@ class MilitaryModule extends Module
      * @param  int  $side        One of the constants:
      *                               MilitaryModule::SIDE_ATTACKER or
      *                               MilitaryModule::SIDE_DEFENDER or
-     *                               null to choose automatically
+     *                               other value to choose automatically
      * @return array             Result information about effect
      */
-    public function fight(Campaign $campaign, $side = null)
+    public function fight(Campaign $campaign, $side = MilitaryModule::SIDE_AUTO)
     {
         $this->getClient()->checkLogin();
 

@@ -8,7 +8,7 @@
         "ext-dom": "*",
         "guzzle/guzzle": "3.4.*",
         "erpk/common": "0.3.*",
-        "stil/xpath-selector": "2.0-beta"
+        "stil/xpath-selector": "2.0"
     },
     "autoload": {
         "psr-4": {

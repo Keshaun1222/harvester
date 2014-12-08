@@ -7,7 +7,7 @@ use Erpk\Harvester\Filter;
 use Erpk\Harvester\Client\Selector\Paginator;
 use Erpk\Common\DateTime;
 use Erpk\Common\EntityManager;
-use XPathSelector\Exception\NotFoundException;
+use XPathSelector\Exception\NodeNotFoundException;
 
 class PressModule extends Module
 {
@@ -194,7 +194,7 @@ class PressModule extends Module
 
         try {
             $subscribers = (int)$xs->find('//em[@class="subscribers"]')->extract();
-        } catch (NotFoundException $e) {
+        } catch (NodeNotFoundException $e) {
             $subscribers = (int)trim($head->find('div[@class="actions"][1]/p[1]/em[1]')->extract());
         }
 
@@ -261,7 +261,7 @@ class PressModule extends Module
                     foreach (self::parseArticleComments($xs->find('//body[1]')) as $comment) {
                         $article['comments'][] = $comment;
                     }
-                } catch (NotFoundException $e) {
+                } catch (NodeNotFoundException $e) {
                     // no comments were found on this page
                 }
             }
@@ -330,7 +330,7 @@ class PressModule extends Module
                 $date     = $art->find('div[2]/div[1]/em')->extract();
                 try {
                     $category = trim($art->find('div[2]/div[1]/a[3]')->extract());
-                } catch (NotFoundException $e) {
+                } catch (NodeNotFoundException $e) {
                     $category = null;
                 }
                 

@@ -3,7 +3,6 @@ namespace Erpk\Harvester\Module\Country;
 
 use Erpk\Harvester\Module\Module;
 use Erpk\Harvester\Exception\ScrapeException;
-use Erpk\Harvester\Exception\NotFoundException;
 use Erpk\Harvester\Client\Selector;
 use Erpk\Common\Entity;
 use Erpk\Harvester\Client\Selector\Filter;

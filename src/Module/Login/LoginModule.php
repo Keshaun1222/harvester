@@ -3,7 +3,7 @@ namespace Erpk\Harvester\Module\Login;
 
 use Erpk\Harvester\Module\Module;
 use Erpk\Harvester\Exception\ScrapeException;
-use XPathSelector\Exception\NotFoundException;
+use XPathSelector\Exception\NodeNotFoundException;
 
 class LoginModule extends Module
 {
@@ -28,7 +28,7 @@ class LoginModule extends Module
         $token = null;
         try {
             $token = $hxs->find('//*[@id="_token"][1]/@value')->extract();
-        } catch (NotFoundException $e) {
+        } catch (NodeNotFoundException $e) {
             $scripts = $hxs->findAll('//script[@type="text/javascript"]');
             $tokenPattern = '@csrfToken\s*:\s*\'([a-z0-9]+)\'@';
             foreach ($scripts as $script) {

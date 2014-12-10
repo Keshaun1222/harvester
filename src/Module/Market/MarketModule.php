@@ -5,7 +5,6 @@ use Erpk\Common\Entity;
 use Erpk\Harvester\Filter;
 use Erpk\Harvester\Exception\ScrapeException;
 use Erpk\Harvester\Exception\InvalidArgumentException;
-use Erpk\Harvester\Exception\RuntimeException;
 use Erpk\Harvester\Client\Selector;
 use Erpk\Harvester\Module\Module;
 
@@ -48,8 +47,7 @@ class MarketModule extends Module
         );
         $response = $request->send();
         
-        $offers = array();
-        
+        $offers = [];
         $this->parseOffers(
             function ($offer) use (&$offers, $country, $industry, $quality) {
                 $offer->country  = $country;
@@ -67,13 +65,13 @@ class MarketModule extends Module
     protected function parseOffers($callback, $html, $page)
     {
         if (stripos($html, 'There are no market offers matching your search.') !== false) {
-            return array();
+            return [];
         }
         
         $hxs = Selector\XPath::loadHTML($html);
         $rows = $hxs->select('//*[@class="price_sorted"]/tr');
         if (!$rows->hasResults()) {
-            return array();
+            return [];
         }
 
         foreach ($rows as $row) {
@@ -83,7 +81,7 @@ class MarketModule extends Module
             $price      = (float)$row->select('td[@class="m_price stprice"][1]/strong')->extract()+
                           (float)substr($row->select('td[@class="m_price stprice"][1]/sup')->extract(), 1)/100;
             
-            $offer = new Offer;
+            $offer = new Offer();
             $offer->id = (int)$id;
             $offer->amount = (int)trim(str_replace(',', '', $row->select('td[@class="m_stock"][1]')->extract()));
             $offer->price = $price;
@@ -109,20 +107,18 @@ class MarketModule extends Module
             )
         );
         
-        $request->addPostFields(
-            array(
-                'amount'  => $amount,
-                'offerId' => $offer->id,
-                '_token'  => $this->getSession()->getToken()
-            )
-        );
+        $request->addPostFields([
+            'amount'  => $amount,
+            'offerId' => $offer->id,
+            '_token'  => $this->getSession()->getToken()
+        ]);
         
         $response = $request->send();
         $hxs = Selector\XPath::loadHTML($response->getBody(true));
         
         $result = $hxs->select('//div[@id="marketplace"]/table');
         if ($result->count() < 2) {
-            throw new ScrapeException;
+            throw new ScrapeException();
         } else {
             return trim($result->extract());
         }

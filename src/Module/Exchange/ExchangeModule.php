@@ -2,7 +2,6 @@
 namespace Erpk\Harvester\Module\Exchange;
 
 use Erpk\Harvester\Module\Module;
-use Erpk\Harvester\Exception\ScrapeException;
 use Erpk\Harvester\Exception\InvalidArgumentException;
 use Erpk\Harvester\Filter;
 use Erpk\Harvester\Client\Selector\Paginator;
@@ -77,13 +76,13 @@ class ExchangeModule extends Module
         
         $this->getClient()->checkLogin();
         $request = $this->getClient()->post('economy/exchange/purchase/');
+        $request->setRelativeReferer('economy/exchange-market/');
         $request->addPostFields([
             'offerId' => $id,
             'amount'  => $amount,
             '_token'  => $this->getSession()->getToken(),
             'page'    => 0
         ]);
-        $request->setHeader('Referer', $this->getClient()->getBaseUrl().'/economy/exchange-market/');
         return $request->send()->json();
     }
 }

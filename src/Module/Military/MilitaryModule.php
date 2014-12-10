@@ -6,11 +6,11 @@ use Erpk\Harvester\Module\Military\Exception\CampaignNotFoundException;
 use Erpk\Harvester\Module\Military\Exception\UnitNotFoundException;
 use Erpk\Harvester\Module\Military\Exception\RegimentNotFoundException;
 use Erpk\Harvester\Exception\ScrapeException;
-use Guzzle\Http\Exception\ClientErrorResponseException;
 use Erpk\Harvester\Client\Selector;
 use Erpk\Common\Citizen\Rank;
 use Erpk\Common\Entity\Campaign;
 use Erpk\Common\Entity\Country;
+use GuzzleHttp\Exception\ClientException;
 
 class MilitaryModule extends Module
 {
@@ -119,9 +119,9 @@ class MilitaryModule extends Module
 
         try {
             $response = $request->send();
-        } catch (ClientErrorResponseException $e) {
+        } catch (ClientException $e) {
             if ($e->getResponse()->getStatusCode() == 404) {
-                throw new CampaignNotFoundException;
+                throw new CampaignNotFoundException();
             } else {
                 throw $e;
             }
@@ -313,11 +313,11 @@ class MilitaryModule extends Module
         $this->getClient()->checkLogin();
 
         $request = $this->getClient()->get('main/group-list/members/'.$unitId.'/'.$regimentId);
-        $request->setHeader('X-Requested-With', 'XMLHttpRequest');
+        $request->markXHR();
         
         try {
             $response = $request->send();
-        } catch (ClientErrorResponseException $e) {
+        } catch (ClientException $e) {
             if ($e->getResponse()->getStatusCode() == 404) {
                 throw new RegimentNotFoundException('Regiment '.$regimentId.' not found.');
             } else {
@@ -371,9 +371,8 @@ class MilitaryModule extends Module
         $this->getClient()->checkLogin();
 
         $request = $this->getClient()->post('military/fight-shooot/'.$campaign->getId());
-        $request->getHeaders()
-            ->set('X-Requested-With', 'XMLHttpRequest')
-            ->set('Referer', $this->getClient()->getBaseUrl().'/military/battlefield/'.$campaign->getId());
+        $request->markXHR();
+        $request->setRelativeReferer('military/battlefield/'.$campaign->getId());
 
         switch ($side) {
             case self::SIDE_ATTACKER:
@@ -427,29 +426,26 @@ class MilitaryModule extends Module
         $this->getClient()->checkLogin();
 
         $request = $this->getClient()->get('military/show-weapons');
-        $request->getQuery()
-            ->add('_token', $this->getSession()->getToken())
-            ->add('battleId', $campaign->getId());
-        $request->getHeaders()
-                ->set('X-Requested-With', 'XMLHttpRequest');
-        $response = $request->send();
-        return $response->json();
+        $request->markXHR();
+        $query = $request->getQuery();
+        $query->add('_token', $this->getSession()->getToken());
+        $query->add('battleId', $campaign->getId());
+
+        return $request->send()->json();
     }
 
     /**
      * Changes weapon in specified to desired quality
-     * @param  int     $campaignId    ID of campaign
-     * @param  int     $weaponQuality Desired weapon quality (10 stands for bazooka)
-     * @return bool    TRUE if successfuly changed weapon, FALSE if weapon not found
+     * @param  Campaign  $campaign    ID of campaign
+     * @param  int       $customizationLevel Desired weapon quality (10 stands for bazooka)
+     * @return bool      TRUE if successfuly changed weapon, FALSE if weapon not found
      */
     public function changeWeapon(Campaign $campaign, $customizationLevel = 7)
     {
         $this->getClient()->checkLogin();
 
         $request = $this->getClient()->post('military/change-weapon');
-        $request->getHeaders()
-            ->set('X-Requested-With', 'XMLHttpRequest');
-
+        $request->markXHR();
         $request->addPostFields([
             '_token'   => $this->getSession()->getToken(),
             'battleId' => $campaign->getId(),
@@ -492,10 +488,8 @@ class MilitaryModule extends Module
         $this->getClient()->checkLogin();
 
         $request = $this->getClient()->post('military/group-missions');
-        $request->getHeaders()
-            ->set('X-Requested-With', 'XMLHttpRequest')
-            ->set('Referer', $this->getClient()->getBaseUrl());
-
+        $request->markXHR();
+        $request->setRelativeReferer();
         $request->addPostFields([
             '_token'    => $this->getSession()->getToken(),
             'groupId'   => $unitId,

@@ -11,20 +11,16 @@ class LoginModule extends Module
     {
         $client = $this->getClient();
         $login = $client->post('login');
+        $login->followRedirects();
+        $login->setRelativeReferer();
         $login->addPostFields([
             '_token'            =>  md5(time()),
             'citizen_email'     =>  $client->getEmail(),
             'citizen_password'  =>  $client->getPassword(),
             'remember'          =>  1
         ]);
-        
-        $login->setHeader('Referer', $client->getBaseUrl());
-        $login = $login->send();
-        if (!$login->isRedirect()) {
-            throw new ScrapeException('Login failed.');
-        }
 
-        $hxs = $client->get()->send()->xpath();
+        $hxs = $login->send()->xpath();
         $token = null;
         try {
             $token = $hxs->find('//*[@id="_token"][1]/@value')->extract();

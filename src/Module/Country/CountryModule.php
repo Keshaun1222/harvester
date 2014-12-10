@@ -13,14 +13,13 @@ class CountryModule extends Module
     {
         $name = $country->getEncodedName();
         $request = $this->getClient()->get('country/'.$type.'/'.$name);
-        $request->getParams()->set('cookies.disable', true);
+        $request->disableCookies();
         $response = $request->send();
-        if ($response->getStatusCode() == 301) {
-            throw new ScrapeException;
+        if ($response->isRedirect()) {
+            throw new ScrapeException();
         }
-        
-        $html = $response->getBody(true);
-        return $html;
+
+        return $response->getBody();
     }
     
     public function getSociety(Entity\Country $country)
@@ -71,7 +70,8 @@ class CountryModule extends Module
         
         /* RESOURCES */
         $resources = $economy->select('//table[@class="resource_list"]/tr');
-        $regions = [];
+        $cregions = [];
+        $ncregions = [];
         if ($resources->hasResults()) {
             foreach ($resources as $tr) {
                 $resource = $tr->select('td[1]/span')->extract();
@@ -191,7 +191,7 @@ class CountryModule extends Module
         
         /* EMBARGOES */
         $countries = $this->getEntityManager()->getRepository('Erpk\Common\Entity\Country');
-        $result['embargoes'] = array();
+        $result['embargoes'] = [];
         $embargoes = $economy->select(
             'h2[text()="Trade embargoes" and @class="section"]'.
             '/following-sibling::div[1]/table/tr[position()>1]'
@@ -216,22 +216,16 @@ class CountryModule extends Module
         $request = $this->getClient()->get(
             'main/online-users/'.$country->getEncodedName().'/all/'.$page
         );
-        $response = $request->send();
-        $html = $response->getBody(true);
-        $hxs = Selector\XPath::loadHTML($html);
+        $hxs = $request->send()->xpath();
 
-        $result = array();
-        $citizens = $hxs->select('//div[@class="citizen"]');
-        if ($citizens->hasResults()) {
-            foreach ($citizens as $citizen) {
-                $url = $citizen->select('div[@class="nameholder"]/a[1]/@href')->extract();
-                $result[] = array(
-                    'id'   => (int)substr($url, strrpos($url, '/')+1),
-                    'name' => trim($citizen->select('div[@class="nameholder"]/a[1]')->extract()),
-                    'avatar' => $citizen->select('div[@class="avatarholder"]/a[1]/img[1]/@src')->extract()
-                );
-            }
-            
+        $result = [];
+        foreach ($hxs->findAll('//div[@class="citizen"]') as $citizen) {
+            $url = $citizen->find('div[@class="nameholder"]/a[1]/@href')->extract();
+            $result[] = [
+                'id'   => (int)substr($url, strrpos($url, '/')+1),
+                'name' => trim($citizen->find('div[@class="nameholder"]/a[1]')->extract()),
+                'avatar' => $citizen->find('div[@class="avatarholder"]/a[1]/img[1]/@src')->extract()
+            ];
         }
         return $result;
     }

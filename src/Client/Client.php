@@ -4,39 +4,52 @@ namespace Erpk\Harvester\Client;
 use Erpk\Harvester\Module\Login\LoginModule;
 use Erpk\Harvester\Exception;
 use Erpk\Harvester\Client\Proxy\ProxyInterface;
-use Guzzle\Plugin\Cookie\CookiePlugin;
-use Guzzle\Http\Client as GuzzleClient;
+use GuzzleHttp\Message\RequestInterface;
+use GuzzleHttp\Client as GuzzleClient;
 
-class Client extends GuzzleClient implements ClientInterface
+class Client implements ClientInterface
 {
+    private $internalClient;
     private $session;
     private $sessionStorage;
     private $email;
     private $password;
+
+    /**
+     * @var Proxy\ProxyInterface
+     */
     private $proxy;
     
     public function __construct()
     {
-        parent::__construct(
-            'http://www.erepublik.com/en',
-            ['redirect.disable' => true]
-        );
-        
-        $this->getConfig()->set('curl.options', [
-            CURLOPT_ENCODING       => '',
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_TIMEOUT        => 20
+        $this->internalClient = new GuzzleClient([
+            'base_url' => 'http://www.erepublik.com',
+            'defaults' => [
+                'allow_redirects' => false,
+                'headers' => [
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:34.0) Gecko/20100101 Firefox/34.0',
+                    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language' => 'en-US,en;q=0.8'
+                ],
+                'expect' => false,
+                'timeout' => 20,
+                'connect_timeout' => 10
+            ]
         ]);
-        
-        $this->getDefaultHeaders()
-            ->set('Expect', '')
-            ->set('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8')
-            ->set('Accept-Language', 'en-US,en;q=0.8');
-
-        $this->setUserAgent('Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0');
 
         $this->loginModule = new LoginModule($this);
+    }
+
+    public function setUserAgent($uaString)
+    {
+        $headers = $this->internalClient->getDefaultOption('headers');
+        $headers['User-Agent'] = $uaString;
+        $this->internalClient->setDefaultOption('headers', $headers);
+    }
+
+    public function getBaseUrl()
+    {
+        return $this->internalClient->getBaseUrl();
     }
 
     public function setEmail($email)
@@ -48,11 +61,10 @@ class Client extends GuzzleClient implements ClientInterface
     
     public function getEmail()
     {
-        if (isset($this->email)) {
-            return $this->email;
-        } else {
+        if (!isset($this->email)) {
             throw new Exception\ConfigurationException('Account e-mail address not specified');
         }
+        return $this->email;
     }
     
     public function setPassword($pwd)
@@ -63,11 +75,10 @@ class Client extends GuzzleClient implements ClientInterface
     
     public function getPassword()
     {
-        if (isset($this->password)) {
-            return $this->password;
-        } else {
+        if (!isset($this->password)) {
             throw new Exception\ConfigurationException('Account password not specified');
         }
+        return $this->password;
     }
 
     public function setSessionStorage($path)
@@ -94,20 +105,19 @@ class Client extends GuzzleClient implements ClientInterface
         if (!isset($this->session)) {
             $sessionId = substr(sha1($this->getEmail()), 0, 7);
             $this->session = new Session(
-                $this->getSessionStorage().'/'.'erpk.'.$sessionId.'.sess'
+                $this->getSessionStorage().'/'.'erpk.'.$sessionId
             );
-            $cookiePlugin = new CookiePlugin($this->session->getCookieJar());
-            $this->getEventDispatcher()->addSubscriber($cookiePlugin);
+
+            $this->internalClient->setDefaultOption('cookies', $this->session->getCookieJar());
         }
     }
     
     public function getSession()
     {
-        if (isset($this->session)) {
-            return $this->session;
-        } else {
+        if (!isset($this->session)) {
             throw new Exception\ConfigurationException('Session has not been initialized');
         }
+        return $this->session;
     }
     
     public function hasProxy()
@@ -122,29 +132,24 @@ class Client extends GuzzleClient implements ClientInterface
     
     public function setProxy(ProxyInterface $proxy)
     {
-        if ($this->hasProxy()) {
-            $this->proxy->remove($this);
-        }
-        
         $this->proxy = $proxy;
-        $this->proxy->apply($this);
-        return $this;
+        $this->internalClient->setDefaultOption('proxy', (string)$proxy);
     }
     
     public function removeProxy()
     {
-        $this->proxy->remove($this);
         $this->proxy = null;
+        $this->internalClient->setDefaultOption('proxy', null);
     }
     
     public function login()
     {
-        return $this->loginModule->login();
+        $this->loginModule->login();
     }
 
     public function logout()
     {
-        return $this->loginModule->logout();
+        $this->loginModule->logout();
     }
 
     public function checkLogin()
@@ -154,15 +159,18 @@ class Client extends GuzzleClient implements ClientInterface
         }
     }
 
-    public function send($requests)
+    public function get($url = null)
     {
-        $responses = parent::send($requests);
-        if (is_array($responses)) {
-            return array_map(function ($request) {
-                return new ResponseWrapper($request->getResponse());
-            }, $requests);
-        } else {
-            return new ResponseWrapper($responses);
-        }
+        return new Request($this->internalClient, $this, 'GET', $url);
+    }
+
+    public function post($url = null)
+    {
+        return new Request($this->internalClient, $this, 'POST', $url);
+    }
+
+    public function send(RequestInterface $request)
+    {
+        return new Response($this->internalClient->send($request));
     }
 }

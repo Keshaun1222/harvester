@@ -2,7 +2,7 @@
 namespace Erpk\Harvester\Module\Citizen;
 
 use Erpk\Harvester\Module\Module;
-use Guzzle\Http\Exception\ClientErrorResponseException;
+use GuzzleHttp\Exception\ClientException;
 use Erpk\Harvester\Exception\ScrapeException;
 use Erpk\Harvester\Client\Selector as OldSelector;
 use XPathSelector\Exception\NodeNotFoundException;
@@ -25,14 +25,14 @@ class CitizenModule extends Module
         $id = Filter::id($id);
 
         $request = $this->getClient()->get('citizen/profile/'.$id);
-        $request->getParams()->set('cookies.disable', true);
+        $request->disableCookies();
 
         try {
             $response = $request->send();
             $result = self::parseProfile($response->getBody(true));
             $result['id'] = $id;
             return $result;
-        } catch (ClientErrorResponseException $e) {
+        } catch (ClientException $e) {
             if ($e->getResponse()->getStatusCode() == 404) {
                 throw new Exception\CitizenNotFoundException('Citizen '.$id.' not found.');
             } else {
@@ -59,15 +59,14 @@ class CitizenModule extends Module
             $string = str_ireplace(',', '', $string);
             return $float ? (float)$string : (int)$string;
         };
-        
+
         $xs = Selector::loadHTML($html);
         $result = [];
 
-        $content  = $xs->find('//div[@id="container"][1]/div[@id="content"][1]');
+        $content  = $xs->find('//div[@id="content"][1]');
         $sidebar  = $content->find('//div[@class="citizen_sidebar"][1]');
         $second   = $content->find('//div[@class="citizen_second"]');
         $state    = $content->find('//div[@class="citizen_state"]');
-
         
         /**
          * BASIC DATA
@@ -81,6 +80,7 @@ class CitizenModule extends Module
         }
         
         $result['name'] = $content->find('//img[@class="citizen_avatar"]/@alt')->extract();
+
         $birth = new DateTime(trim($second->find('p[2]')->extract()));
         $result['birth'] = $birth->format('Y-m-d');
         
@@ -297,20 +297,20 @@ class CitizenModule extends Module
     
     /**
      * Searches for matching citizen
-     * @param  string  $query Citizen name
+     * @param  string  $searchQuery Citizen name
      * @param  integer $page  Page number
      * @return array          List of matching citizens
      * @throws ScrapeException
      */
-    public function search($query, $page = 1)
+    public function search($searchQuery, $page = 1)
     {
         $page = Filter::page($page);
         $request = $this->getClient()->get('main/search/');
-        $request->getParams()->set('cookies.disable', true);
-        $request
-            ->getQuery()
-            ->set('q', $query)
-            ->set('page', $page);
+        $request->disableCookies();
+
+        $query = $request->getQuery();
+        $query->set('q', $searchQuery);
+        $query->set('page', $page);
         
         $response = $request->send();
         $xs = OldSelector\XPath::loadHTML($response->getBody(true));

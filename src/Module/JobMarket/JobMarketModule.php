@@ -2,9 +2,7 @@
 namespace Erpk\Harvester\Module\JobMarket;
 
 use Erpk\Harvester\Module\Module;
-use Erpk\Harvester\Exception\InvalidArgumentException;
-use Erpk\Harvester\Exception\ScrapeException;
-use Erpk\Harvester\Client\Selector;
+use XPathSelector\Selector;
 use Erpk\Harvester\Filter;
 use Erpk\Common\Entity;
 
@@ -14,35 +12,28 @@ class JobMarketModule extends Module
     {
         $page = Filter::page($page);
         $this->getClient()->checkLogin();
-        
-        $url      = 'economy/job-market/'.$country->getId().'/'.$page;
-        $request  = $this->getClient()->get($url);
+
+        $request  = $this->getClient()->get('economy/job-market/'.$country->getId().'/'.$page);
         $response = $request->send();
         
-        return $this->parseOffers($response->getBody(true), $page);
+        return $this->parseOffers($response->getBody(true));
     }
     
-    public static function parseOffers($html, $requestedPage)
+    public static function parseOffers($html)
     {
-        $hxs = Selector\XPath::loadHTML($html);
+        $offers = [];
 
-        $rows = $hxs->select('//*[@class="salary_sorted"]/tr');
-        $offers = array();
-        if (!$rows->hasResults()) {
-            return $offers;
-        }
-        
-        foreach ($rows as $row) {
-            
-            $url = $row->select('td/a/@href')->extract();
-            $offers[] = array(
-                'employer' => array(
+        $hxs = Selector::loadHTML($html);
+        foreach ($hxs->findAll('//*[@class="salary_sorted"]/tr') as $row) {
+            $url = $row->find('td/a/@href')->extract();
+            $offers[] = [
+                'employer' => [
                     'id' => (int)substr($url, strrpos($url, '/')+1),
-                    'name' => $row->select('td/a/@title')->extract()
-                ),
-                'salary' => (int)$row->select('td[4]/strong')->extract()+
-                (float)substr($row->select('td[4]/sup')->extract(), 1)/100
-            );
+                    'name' => $row->find('td/a/@title')->extract()
+                ],
+                'salary' => (int)$row->find('td[4]/strong')->extract()+
+                (float)substr($row->find('td[4]/sup')->extract(), 1)/100
+            ];
         }
         return $offers;
     }

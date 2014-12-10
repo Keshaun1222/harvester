@@ -6,7 +6,7 @@
         "ext-curl": "*",
         "ext-json": "*",
         "ext-dom": "*",
-        "guzzle/guzzle": "3.4.*",
+        "guzzlehttp/guzzle": "5.0.*",
         "erpk/common": "0.3.*",
         "stil/xpath-selector": "2.0"
     },

@@ -1,8 +1,6 @@
 <?php
 namespace Erpk\Harvester\Client\Proxy;
 
-use Erpk\Harvester\Client\Client;
-
 class HttpProxy implements ProxyInterface
 {
     public $hostname;
@@ -17,30 +15,14 @@ class HttpProxy implements ProxyInterface
         $this->username = $user;
         $this->password = $pass;
     }
-    
-    public function apply(Client $client)
+
+    public function __toString()
     {
-        $config = $client->getConfig();
-        $curl = $config->get('curl.options');
-        
-        $curl[CURLOPT_PROXY] = $this->hostname.':'.$this->port;
+        $str = 'tcp://';
         if (isset($this->password)) {
-            $curl[CURLOPT_PROXYUSERPWD] = $this->username.':'.$this->password;
+            $str .= $this->username.':'.$this->password.'@';
         }
-        
-        $config->set('curl.options', $curl);
-    }
-    
-    public function remove(Client $client)
-    {
-        $config = $client->getConfig();
-        $curl = $config->get('curl.options');
-        
-        unset(
-            $curl[CURLOPT_PROXY],
-            $curl[CURLOPT_PROXYUSERPWD]
-        );
-        
-        $config->set('curl.options', $curl);
+        $str .= $this->hostname.':'.$this->port;
+        return $str;
     }
 }

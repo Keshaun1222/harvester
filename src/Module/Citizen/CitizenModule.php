@@ -88,7 +88,7 @@ class CitizenModule extends Module
         $avatar = OldSelector\RegEx::find($avatar, '/background-image\: url\(([^)]+)\);/i');
         $result['avatar'] = $avatar->group(0);
         
-        $result['online'] = $content->find('//span[@class="citizen_presence"][1]/img[1]/@alt')->extract() == 'online';
+        $result['online'] = $content->findOneOrNull('//span[@class="online_status on"][1]') != null;
         
         /**
          * BAN/DEAD
@@ -107,22 +107,24 @@ class CitizenModule extends Module
 
         $result['alive'] = $state->findOneOrNull('div/span/img[contains(@src, "dead_citizen")]/../..') != null;
         
-        $exp = $content->find('//div[@class="citizen_experience"]');
-        $result['level'] = (int)$exp->find('strong[@class="citizen_level"]')->extract();
+        $exp = $content->find('//strong[@class="citizen_level"][1]');
+        $result['level'] = (int)trim($exp->extract());
+        $result['experience'] = $parseStat(
+            str_replace(
+                '<strong>Experience Level</strong><br />',
+                '',
+                $exp->find('@title')->extract()
+            )
+        );
         $result['division'] = Helpers::getDivision($result['level']);
-        $result['experience'] = $parseStat($exp->find('div/p')->extract());
         $result['elite_citizen'] = $content->findOneOrNull('//span[@title="eRepublik Elite Citizen"][1]') !== null;
         $result['national_rank'] = (int)$second->find('small[3]/strong')->extract();
 
         $military = function($eliteCitizen) use ($content, $parseStat) {
             $arr = [];
-            $military = $content->findAll('//div[@class="citizen_military"]');
-            $arr['strength'] = (float)str_ireplace(',', '', trim($military->item(0)->find('h4')->extract()));
-            $item1 = $military->item(1);
-            if (!$item1) {
-                throw new ScrapeException;
-            }
-            $arr['rank'] = new Rank($parseStat($item1->find('div/small[2]/strong')->extract(), true));
+            $str = $content->find('//div[@class="citizen_military_box"][1]/span[2]')->extract();
+            $arr['strength'] = (float)str_ireplace(',', '', trim($str));
+            $arr['rank'] = new Rank($parseStat($content->find('//span[@class="rank_numbers"]')->extract(), true));
             $arr['base_hit'] = Helpers::getHit(
                 $arr['strength'],
                 $arr['rank']->getLevel(),

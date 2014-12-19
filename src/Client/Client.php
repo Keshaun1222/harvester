@@ -1,6 +1,8 @@
 <?php
 namespace Erpk\Harvester\Client;
 
+use Erpk\Harvester\Client\Proxy\HttpProxy;
+use Erpk\Harvester\Client\Proxy\NetworkInterfaceProxy;
 use Erpk\Harvester\Module\Login\LoginModule;
 use Erpk\Harvester\Exception;
 use Erpk\Harvester\Client\Proxy\ProxyInterface;
@@ -129,17 +131,46 @@ class Client implements ClientInterface
     {
         return $this->proxy;
     }
+
+    protected function addCurlOption($key, $value)
+    {
+        $conf = $this->internalClient->getDefaultOption('config');
+        $conf['curl'][$key] = $value;
+        $this->internalClient->setDefaultOption('config', $conf);
+    }
+
+    protected function removeCurlOption($key)
+    {
+        $conf = $this->internalClient->getDefaultOption('config');
+        if (array_key_exists('curl', $conf) && array_key_exists($key, $conf['curl'])) {
+            unset($conf['curl'][$key]);
+        }
+        $this->internalClient->setDefaultOption('config', $conf);
+    }
     
     public function setProxy(ProxyInterface $proxy)
     {
+        if ($proxy instanceof HttpProxy) {
+            $this->internalClient->setDefaultOption('proxy', (string)$proxy);
+        } else if ($proxy instanceof NetworkInterfaceProxy) {
+            $this->addCurlOption(CURLOPT_INTERFACE, $proxy->getNetworkInterface());
+        } else {
+            throw new \InvalidArgumentException("This type of proxy is not supported");
+        }
         $this->proxy = $proxy;
-        $this->internalClient->setDefaultOption('proxy', (string)$proxy);
     }
     
     public function removeProxy()
     {
+        $proxy = $this->proxy;
+        if ($proxy instanceof HttpProxy) {
+            $this->internalClient->setDefaultOption('proxy', null);
+        } else if ($proxy instanceof NetworkInterfaceProxy) {
+            $this->removeCurlOption(CURLOPT_INTERFACE);
+        } else {
+            throw new \InvalidArgumentException("This type of proxy is not supported");
+        }
         $this->proxy = null;
-        $this->internalClient->setDefaultOption('proxy', null);
     }
     
     public function login()

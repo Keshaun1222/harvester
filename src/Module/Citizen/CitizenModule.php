@@ -105,7 +105,7 @@ class CitizenModule extends Module
             $result['ban'] = null;
         }
 
-        $result['alive'] = $state->findOneOrNull('div/span/img[contains(@src, "dead_citizen")]/../..') != null;
+        $result['alive'] = $state->findOneOrNull('div/span/img[contains(@src, "dead_citizen")]/../..') == null;
         
         $exp = $content->find('//strong[@class="citizen_level"][1]');
         $result['level'] = (int)trim($exp->extract());
@@ -314,29 +314,21 @@ class CitizenModule extends Module
         $query->set('q', $searchQuery);
         $query->set('page', $page);
         
-        $response = $request->send();
-        $xs = OldSelector\XPath::loadHTML($response->getBody(true));
-        
+        $xs = $request->send()->xpath();
+
+        $result = [];
         $paginator = new OldSelector\Paginator($xs);
         if ($paginator->isOutOfRange($page) && $page > 1) {
-            return array();
+            return $result;
         }
-        
-        $list = $xs->select('//table[@class="bestof"]/tr');
-        
-        if (!$list->hasResults()) {
-            throw new ScrapeException;
-        }
-        $result = array();
-        foreach ($list as $tr) {
-            if ($tr->select('th[1]')->hasResults()) {
-                continue;
-            }
-            $href = $tr->select('td[2]/div[1]/div[2]/a/@href')->extract();
-            $result[] = array(
+
+        $table = $xs->find('//table[@class="bestof"]');
+        foreach ($table->findAll('tr[position()>1]') as $tr) {
+            $href = $tr->find('td[2]/div[1]/div[2]/a/@href')->extract();
+            $result[] = [
                 'id'   => (int)substr($href, strrpos($href, '/') + 1),
-                'name' => $tr->select('td[2]/div[1]/div[2]/a')->extract(),
-            );
+                'name' => $tr->find('td[2]/div[1]/div[2]/a')->extract(),
+            ];
         }
         return $result;
     }

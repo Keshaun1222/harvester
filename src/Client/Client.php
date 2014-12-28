@@ -12,6 +12,10 @@ use GuzzleHttp\Client as GuzzleClient;
 class Client implements ClientInterface
 {
     private $internalClient;
+
+    /**
+     * @var Session
+     */
     private $session;
     private $sessionStorage;
     private $email;

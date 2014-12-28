@@ -7,17 +7,17 @@ use Erpk\Harvester\Filter;
 use Erpk\Harvester\Client\Selector\Paginator;
 use Erpk\Common\DateTime;
 use Erpk\Common\EntityManager;
+use Erpk\Common\Entity\Country;
 use XPathSelector\Exception\NodeNotFoundException;
 
 class PressModule extends Module
 {
-    public function publishArticle($articleName, $articleBody, Entity\Country $articleLocation, $articleCategory)
+    public function publishArticle($articleName, $articleBody, Country $articleLocation, $articleCategory)
     {
         $this->getClient()->checkLogin();
 
         $request = $this->getClient()->post('main/write-article');
-        $request->getHeaders()
-            ->set('Referer', $this->getClient()->getBaseUrl().'/main/write-article');
+        $request->setRelativeReferer('main/write-article');
         $request->addPostFields([
             'article_name' => $articleName,
             'article_body' => $articleBody,
@@ -38,10 +38,7 @@ class PressModule extends Module
     {
         $this->getClient()->checkLogin();
         $request = $this->getClient()->post('main/edit-article/'.$article->getId());
-        $request
-            ->getHeaders()
-            ->set('Referer', $this->getClient()->getBaseUrl().'/main/edit-article/'.$article->getId());
-
+        $request->setRelativeReferer('main/edit-article/'.$article->getId());
         $request->addPostFields([
             'commit' => 'Edit',
             'article_name' => $articleName,
@@ -56,7 +53,7 @@ class PressModule extends Module
     public function deleteArticle(Article $article)
     {
         $this->getClient()->checkLogin();
-        $request = $this->getClient()->get('delete-article/'.$article->getId().'/1');
+        $request = $this->getClient()->get('main/delete-article/'.$article->getId().'/1');
         $request->send();
     }
 
@@ -139,6 +136,7 @@ class PressModule extends Module
                 'id' => $id,
                 'level' => $level,
                 'parent_id' => null,
+                'deleted' => $deleted,
                 'date' => $date,
                 'votes' => $votes,
                 'author' => [
@@ -184,7 +182,8 @@ class PressModule extends Module
         if ($location === '/en') {
             throw new Exception\ArticleNotFoundException('Article with ID '.$id.' has not been found.');
         }
-        $xs = $this->getClient()->get($location)->send()->xpath();
+
+        $xs = $this->getClient()->get($this->getClient()->getBaseUrl().$location)->send()->xpath();
 
         $head = $xs->find('//div[@class="newspaper_head"]');
         $date = $xs->find('//div[@class="post_details"]/em[@class="date"]');
@@ -200,7 +199,7 @@ class PressModule extends Module
 
         $article = [
             'id'  => $id,
-            'url' => 'http://www.erepublik.com'.$location,
+            'url' => $this->getClient()->getBaseUrl().$location,
             'date' => self::parseDate($date->extract()),
             'title' => $xs->find('//div[@class="post_content"][1]/h2[1]/a[1]')->extract(),
             'votes' => (int)trim($xs->find('//strong[@class="numberOfVotes_'.$id.'"][1]')->extract()),
@@ -241,7 +240,6 @@ class PressModule extends Module
 
         unset($xs);
 
-        $requests = [];
         for ($p = 2; $p <= $pagesTotal; $p++) {
             $request = $this->getClient()->post('main/article-comment/loadMoreComments/');
             $request->addPostFields([
@@ -249,24 +247,16 @@ class PressModule extends Module
                 'page'      => $p,
                 '_token'    => $this->getSession()->getToken()
             ]);
-            $requests[] = $request;
-        }
+            $xs = $request->send()->xpath();
 
-        $chunks = array_chunk($requests, 4);
-        foreach ($chunks as $chunk) {
-            $responses = $this->getClient()->send($chunk);
-            foreach ($responses as $response) {
-                $xs = $response->xpath();
-                try {
-                    foreach (self::parseArticleComments($xs->find('//body[1]')) as $comment) {
-                        $article['comments'][] = $comment;
-                    }
-                } catch (NodeNotFoundException $e) {
-                    // no comments were found on this page
+            try {
+                foreach (self::parseArticleComments($xs->find('//body[1]')) as $comment) {
+                    $article['comments'][] = $comment;
                 }
+            } catch (NodeNotFoundException $e) {
+                // no comments were found on this page
             }
         }
-        
         return $article;
     }
 
@@ -285,7 +275,8 @@ class PressModule extends Module
             throw new Exception\NewspaperNotFoundException('Newspaper with ID '.$id.' does not exist');
         }
 
-        $xs = $this->getClient()->get($location)->send()->xpath();
+        $newspaperUrl = $this->getClient()->getBaseUrl().$location;
+        $xs = $this->getClient()->get($newspaperUrl)->send()->xpath();
         $paginator = new Paginator($xs);
 
         $info   = $xs->find('//div[@class="newspaper_head"]');
@@ -308,6 +299,7 @@ class PressModule extends Module
                 'name' => $director->find('@title')->extract()
             ],
             'name'          => $info->find('//h1/a/@title')->extract(),
+            'url'           => $newspaperUrl,
             'avatar'        => str_replace('55x55', '100x100', $avatar),
             'country'       => $countries->findOneByName($info->find('div[1]/a[1]/img[2]/@title')->extract()),
             'subscribers'   => (int)$info->find('div[@class="actions"]')->extract(),

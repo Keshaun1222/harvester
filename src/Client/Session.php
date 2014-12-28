@@ -68,7 +68,10 @@ class Session
         $this->data['citizen.id'] = $id;
         return $this;
     }
-    
+
+    /**
+     * @return string CSRF Token
+     */
     public function getToken()
     {
         return $this->data['token'];

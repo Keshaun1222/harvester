@@ -3,8 +3,6 @@ namespace Erpk\Harvester\Module\Management;
 
 use Erpk\Harvester\Client\Selector;
 use Erpk\Harvester\Filter;
-use Guzzle\Http\Exception\CurlException;
-use Guzzle\Http\Exception\ClientErrorResponseException;
 use Erpk\Harvester\Module\Module;
 use Erpk\Common\Entity;
 
@@ -24,21 +22,18 @@ class FriendsModule extends Module
             $citizenId = $citizenIds;
         }
 
-        $request = $this->getClient()->post('main/messages-compose/'.$citizenId);
-        $request->getHeaders()
-            ->set('X-Requested-With', 'XMLHttpRequest')
-            ->set('Referer', $this->getClient()->getBaseUrl().'/main/messages-compose/'.$citizenId);
-        $request->addPostFields(
-            array(
-                    '_token'          => $this->getSession()->getToken(),
-                    'citizen_name'    => $citizens,
-                    'citizen_subject' => $subject,
-                    'citizen_message' => $content
-            )
-        );
+        $url = 'main/messages-compose/'.$citizenId;
+        $request = $this->getClient()->post($url);
+        $request->markXHR();
+        $request->setRelativeReferer($url);
+        $request->addPostFields([
+            '_token'          => $this->getSession()->getToken(),
+            'citizen_name'    => $citizens,
+            'citizen_subject' => $subject,
+            'citizen_message' => $content
+        ]);
 
         $response = $request->send();
-
         return $this->parseMessage($response->getBody(true));
     }
 
@@ -47,41 +42,34 @@ class FriendsModule extends Module
         $threadId = Filter::id($threadId);
         $this->getClient()->checkLogin();
 
-        $request = $this->getClient()->post('main/messages-compose/0');
-        $request->getHeaders()
-        ->set('X-Requested-With', 'XMLHttpRequest')
-        ->set('Referer', $this->getClient()->getBaseUrl().'/main/messages-compose/0');
-        $request->addPostFields(
-                array(
-                        '_token'          => $this->getSession()->getToken(),
-                        'thread_id'    => $threadId,
-                        'citizen_message' => $messagebody
-                )
-        );
+        $url = 'main/messages-compose/0';
+        $request = $this->getClient()->post($url);
+        $request->markXHR();
+        $request->setRelativeReferer($url);
+        $request->addPostFields([
+            '_token'          => $this->getSession()->getToken(),
+            'thread_id'       => $threadId,
+            'citizen_message' => $messagebody
+        ]);
 
         $response = $request->send();
-
         return $this->parseMessage($response->getBody(true));
     }
 
     public function deleteMessage($threadId)
     {
-        $citizenId = Filter::id($citizenId);
+        $threadId = Filter::id($threadId);
         $this->getClient()->checkLogin();
 
         $request = $this->getClient()->post('main/messages-delete');
-        $request->getHeaders()
-        ->set('X-Requested-With', 'XMLHttpRequest')
-        ->set('Referer', $this->getClient()->getBaseUrl().'/main/messages-inbox');
-        $request->addPostFields(
-                array(
-                        '_token'          => $this->getSession()->getToken(),
-                        'delete_message[]'    => $threadId,
-                )
-        );
+        $request->markXHR();
+        $request->setRelativeReferer('main/messages-inbox');
+        $request->addPostFields([
+            '_token' => $this->getSession()->getToken(),
+            'delete_message[]' => $threadId,
+        ]);
 
         $response = $request->send();
-
         return $response->getBody(true);
     }
 
@@ -91,19 +79,16 @@ class FriendsModule extends Module
         $this->getClient()->checkLogin();
 
         $request = $this->getClient()->get('main/messages-read/'.$threadId);
-        $request->getHeaders()
-        ->set('X-Requested-With', 'XMLHttpRequest')
-        ->set('Referer', $this->getClient()->getBaseUrl().'/main/messages-inbox');
+        $request->markXHR();
+        $request->setRelativeReferer('main/messages-inbox');
 
         $response = $request->send();
-
         return $response->getBody(true);
     }
 
     private function extractCitizenId(&$profileAddress)
     {
         $profileAddress = substr($profileAddress, strpos($profileAddress, '/profile/') + 10);
-
         return $profileAddress;
     }
 
@@ -117,9 +102,10 @@ class FriendsModule extends Module
         $messageItems = $hxs->select('//div[@class="message_item_container" or @class="message_item_container unread"]');
 
         if (!$messageItems->hasResults()) {
-            return array();
+            return [];
         }
 
+        $messages = [];
         foreach ($messageItems as $messageItem) {
             $senderId = $messageItem->select($nameholderPath.'/a[1]/@href')->extract();
             $this->extractCitizenId($senderId);
@@ -180,11 +166,10 @@ class FriendsModule extends Module
         $pages = array();
 
         $i = 1;
-           do {
+        do {
             $request = $this->getClient()->get('main/messages-paginated/'.$i);
-            $request->getHeaders()
-            ->set('X-Requested-With', 'XMLHttpRequest')
-            ->set('Referer', $this->getClient()->getBaseUrl().'/main/messages-inbox');
+            $request->markXHR();
+            $request->setRelativeReferer('main/messages-inbox');
 
             $response = $request->send();
             $page = $response->getBody(true);
@@ -209,6 +194,7 @@ class FriendsModule extends Module
             return array();
         }
 
+        $messageThreads = [];
         foreach ($messageThreadsItems as $messageThreadsItem) {
             $threadId = $messageThreadsItem->select('th/input/@value')->extract();
             $lastResponderId = $messageThreadsItem->select('td[1]/div[@class="nameholder"]/div[1]/a/@href')->extract();
@@ -273,10 +259,10 @@ class FriendsModule extends Module
             $removeurl = $hxs->select('//a[@class="action_friend_remove tip"][1]/@href')->extract();
         }
 
-        if (isset($addurl) && $status = 'add') {
+        if (isset($addurl) && $status == 'add') {
             $url = $addurl;
         }
-        if (isset($removeurl) && $status = 'remove') {
+        if (isset($removeurl) && $status == 'remove') {
             $url = $removeurl;
         }
 
@@ -290,7 +276,7 @@ class FriendsModule extends Module
            $hxs = Selector\XPath::loadHTML($html);
            $node = $hxs->select('//table[@class="success_message"]');
            if ($node->hasResults()) {
-                  return $node->select('tr/td')->extract();
+               return $node->select('tr/td')->extract();
            }
         }
 
@@ -312,7 +298,6 @@ class FriendsModule extends Module
         if ($hxs->select('//a[@class="action_friend_remove tip"]')->hasResults()) {
             return true;
         }
-
     }
 
     public function listFriendsbyPage($citizenId, $page)
@@ -321,18 +306,11 @@ class FriendsModule extends Module
         $this->getClient()->checkLogin();
         $request = $this->getClient()->get('main/citizen-friends/'.$citizenId.'/'.$page.'/list');
 
-        $errtime = 0;
         $notloaded = true;
-        while ($notloaded && $errtime < 5) {
-            try {
-                $response = $request->send();
-                $html = $response->json()['content'];
-                $notloaded = false;
-            } catch (CurlException $e) {
-                $errtime++;
-            } catch (ClientErrorResponseException $e) {
-                return array();
-            }
+        while ($notloaded) {
+            $response = $request->send();
+            $html = $response->json()['content'];
+            $notloaded = false;
         }
 
         $hxs = Selector\XPath::loadHTML($html);
@@ -342,6 +320,7 @@ class FriendsModule extends Module
             return array();
         }
 
+        $friends = [];
         foreach ($friendsListItems as $friendItem) {
             $link = $friendItem->select('td[@class="friend_info"]/a/@href')->extract();
             $citizenId = substr($link, strripos($link, '/') + 1);
@@ -356,10 +335,9 @@ class FriendsModule extends Module
             }
 
             $friend = array();
-            $friend['citizenId'] = (int) $citizenId;
+            $friend['citizenId'] = (int)$citizenId;
             $friend['citizenName'] = $citizenName;
-            $friend['isDead'] = (boolean) $isDead;
-//    		$friend['link'] = $link;
+            $friend['isDead'] = (bool)$isDead;
             $friend['avatarUrl'] = $avatarUrl;
             if (isset($removeUrl)) {
                 $friend['removeUrl'] = $removeUrl;
@@ -380,7 +358,6 @@ class FriendsModule extends Module
             $page = $this->listFriendsbyPage($citizenId, $i);
 
             $notendpage = !empty($page);
- //           $friends = array_merge($friends, $page);
             foreach ($page as $friend) {
             	$callback($friend);
             }
@@ -417,15 +394,13 @@ class FriendsModule extends Module
         $this->getClient()->checkLogin();
 
         $request = $this->getClient()->post('economy/donate-money-action');
-        $request->setHeader('Referer', $this->getClient()->getBaseUrl().'/economy/donate-money/'.$citizenId);
-        $request->addPostFields(
-                array(
-                        'citizen_id'    => $citizenId,
-                        'amount' => $amount,
-                        'currency_id' => $currencyId,
-                        '_token' => $this->getSession()->getToken()
-        )
-        );
+        $request->setRelativeReferer('economy/donate-money/'.$citizenId);
+        $request->addPostFields([
+            'citizen_id'    => $citizenId,
+            'amount' => $amount,
+            'currency_id' => $currencyId,
+            '_token' => $this->getSession()->getToken()
+        ]);
 
         $response = $request->send();
 
@@ -451,16 +426,14 @@ class FriendsModule extends Module
         $this->getClient()->checkLogin();
 
         $request = $this->getClient()->post('economy/donate-items-action');
-        $request->setHeader('Referer', $this->getClient()->getBaseUrl().'/economy/donate-items/'.$citizenId);
-        $request->addPostFields(
-                array(
-                        '_token'          => $this->getSession()->getToken(),
-                        'citizen_id'    => $citizenId,
-                        'amount' => $amount,
-                        'industry_id' => $industry->getId(),
-                        'quality' => $quality
-        )
-        );
+        $request->setRelativeReferer('economy/donate-items/'.$citizenId);
+        $request->addPostFields([
+            '_token'        => $this->getSession()->getToken(),
+            'citizen_id'    => $citizenId,
+            'amount'        => $amount,
+            'industry_id'   => $industry->getId(),
+            'quality'       => $quality
+        ]);
 
         $response = $request->send();
 

@@ -10,6 +10,7 @@ use Erpk\Harvester\Client\Selector;
 use Erpk\Common\Citizen\Rank;
 use Erpk\Common\Entity\Campaign;
 use Erpk\Common\Entity\Country;
+use Erpk\Common\DateTime;
 use GuzzleHttp\Exception\ClientException;
 
 class MilitaryModule extends Module
@@ -292,12 +293,12 @@ class MilitaryModule extends Module
         return $result;
     }
     
-    public static function getUnitAvatar($unitId, DateTime $createdAt, $size = 'medium')
+    public static function getUnitAvatar($unitId, DateTime $createdAt, $size = null)
     {
         return
-            'http://static.erepublik.com/uploads/avatars/Groups/'.
+            'http://erpk.static.avatars.s3.amazonaws.com/avatars/Groups/'.
             $createdAt->format('Y/m/d').'/'.
-            md5($unitId).'_'.$size.'.jpg';
+            md5($unitId).'.jpg';
     }
     
     /**

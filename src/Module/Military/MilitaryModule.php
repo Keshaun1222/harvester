@@ -2,9 +2,6 @@
 namespace Erpk\Harvester\Module\Military;
 
 use Erpk\Harvester\Module\Module;
-use Erpk\Harvester\Module\Military\Exception\CampaignNotFoundException;
-use Erpk\Harvester\Module\Military\Exception\UnitNotFoundException;
-use Erpk\Harvester\Module\Military\Exception\RegimentNotFoundException;
 use Erpk\Harvester\Exception\ScrapeException;
 use Erpk\Harvester\Client\Selector;
 use Erpk\Common\Citizen\Rank;
@@ -48,6 +45,9 @@ class MilitaryModule extends Module
             }
             
             foreach ($campaigns as $li) {
+                /**
+                 * @var $li Node
+                 */
                 $id = $li->find('@id')->extract();
                 $id = (int)substr($id, strpos($id, '-')+1);
                 $result[$type][] = $id;
@@ -122,7 +122,7 @@ class MilitaryModule extends Module
             $response = $request->send();
         } catch (ClientException $e) {
             if ($e->getResponse()->getStatusCode() == 404) {
-                throw new CampaignNotFoundException();
+                throw new Exception\CampaignNotFoundException();
             } else {
                 throw $e;
             }
@@ -245,7 +245,7 @@ class MilitaryModule extends Module
             $response = $request->send();
         } catch (ClientException $e) {
             if ($e->getResponse()->getStatusCode() == 404) {
-                throw new UnitNotFoundException("Military Unit with ID $id have not been found.");
+                throw new Exception\UnitNotFoundException("Military Unit with ID $id have not been found.");
             } else {
                 throw $e;
             }
@@ -271,6 +271,9 @@ class MilitaryModule extends Module
         $regs = [];
         $regiments = $content->findAll('//select[@id="regiments_lists"]/option/@value');
         foreach ($regiments as $regiment) {
+            /**
+             * @var $regiment Node
+             */
             $regs[] = (int)$regiment->extract();
         }
         $regs = array_unique($regs);
@@ -321,7 +324,7 @@ class MilitaryModule extends Module
             $response = $request->send();
         } catch (ClientException $e) {
             if ($e->getResponse()->getStatusCode() == 404) {
-                throw new RegimentNotFoundException('Regiment '.$regimentId.' not found.');
+                throw new Exception\RegimentNotFoundException('Regiment '.$regimentId.' not found.');
             } else {
                 throw $e;
             }
@@ -342,6 +345,9 @@ class MilitaryModule extends Module
             return [];
         } else {
             foreach ($members as $member) {
+                /**
+                 * @var $member Node
+                 */
                 $avatar = $member->find('td[@class="avatar"]');
                 $mrank  = $member->find('td[@class="mrank"]');
                 $location = $avatar->find('div[@class="current_location"][1]/span[1]/span[1]/@title')->extract();
@@ -406,6 +412,7 @@ class MilitaryModule extends Module
      * Changes the side country in resistance war
      * @param  Campaign $campaign
      * @param  Country  $country
+     * @throws \Exception You cannot change the side in this campaign
      */
     protected function chooseSide(Campaign $campaign, Country $country)
     {

@@ -232,19 +232,20 @@ class MilitaryModule extends Module
     /**
      * Returns information about Military Unit
      * @param  int $id Military Unit ID
+     * @throws ScrapeException
      * @return array Military Unit's information
      */
     public function getUnit($id)
     {
-        $this->getClient()->checkLogin();
         $this->filter($id, 'id');
+        $this->getClient()->checkLogin();
         $request = $this->getClient()->get('main/group-list/members/'.$id);
-        
+
         try {
             $response = $request->send();
-        } catch (ClientErrorResponseException $e) {
+        } catch (ClientException $e) {
             if ($e->getResponse()->getStatusCode() == 404) {
-                throw new UnitNotFoundException('Military Unit '.$id.' not found.');
+                throw new UnitNotFoundException("Military Unit with ID $id have not been found.");
             } else {
                 throw $e;
             }

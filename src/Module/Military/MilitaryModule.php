@@ -12,6 +12,7 @@ use Erpk\Common\Entity\Campaign;
 use Erpk\Common\Entity\Country;
 use Erpk\Common\DateTime;
 use GuzzleHttp\Exception\ClientException;
+use XPathSelector\Node;
 
 class MilitaryModule extends Module
 {
@@ -59,11 +60,11 @@ class MilitaryModule extends Module
         return $result;
     }
     
-    protected function parseBattleField($html, $id)
+    protected function parseBattleField(Node $xs, $id)
     {
         $count = preg_match_all(
             '/var SERVER_DATA\s*=\s*({[^;]*)/i',
-            $html,
+            $xs->outerHTML(),
             $serverDataRaw
         );
 
@@ -94,9 +95,8 @@ class MilitaryModule extends Module
         $campaign->setId($id);
         $campaign->setAttacker($countries->find($mustInvert ? $defenderId : $invaderId));
         $campaign->setDefender($countries->find($mustInvert ? $invaderId : $defenderId));
-        
-        $hxs = \XPathSelector\Selector::loadHTML($html);
-        $regionName = $hxs->find('//a[@id="region_name_link"][1]')->extract();
+
+        $regionName = $xs->find('//a[@id="region_name_link"][1]')->extract();
         $region = $regions->findOneByName($regionName);
 
         $campaign->setRegion($region);
@@ -108,8 +108,8 @@ class MilitaryModule extends Module
     
     /**
      * Returns static information about given campaign
-     * @param  int    $id Campaign ID
-     * @return array  Array with basic information about battle
+     * @param  int $id Campaign ID
+     * @return Campaign An entity with basic information about the campaign
      */
     public function getCampaign($id)
     {
@@ -127,15 +127,16 @@ class MilitaryModule extends Module
                 throw $e;
             }
         }
+
         /**
-         * Resistance wars FIX
+         * Resistance wars detection
          */
         if ($response->isRedirect() &&
-            preg_match('#^'.$this->getClient()->getBaseUrl().'/wars/show/([0-9]+)$#', $response->getLocation())
+            preg_match('#/wars/show/([0-9]+)$#', $response->getLocation())
         ) {
             $war = $this->getClient()->get($response->getLocation())->send();
             preg_match(
-                '#'.$this->getClient()->getBaseUrl().'/military/battlefield-choose-side/[0-9]+/[0-9]+#',
+                '#military/battlefield-choose-side/\d+/\d+#',
                 $war->getBody(true),
                 $links
             );
@@ -145,16 +146,15 @@ class MilitaryModule extends Module
                 $response = $this->getClient()->get($response->getLocation())->send();
             }
         }
-        
-        $campaign = $this->parseBattleField($response->getBody(true), $id);
 
-        return $campaign;
+        return $this->parseBattleField($response->xpath(), $id);
     }
 
     /**
-     * Returns "dynamic" statistics about given campaign
-     * @param  Campaign $campaign Campaign to find
-     * @return array             Statistics on given campaign
+     * Returns statistics of given campaign
+     * @param  Campaign $campaign Campaign to get statistics of
+     * @throws ScrapeException
+     * @return array Statistics on given campaign
      */
     public function getCampaignStats(Campaign $campaign)
     {
@@ -164,8 +164,8 @@ class MilitaryModule extends Module
         $request = $this->getClient()->get('military/battle-stats/'.$campaign->getId().'/1');
         $stats = $request->send()->json();
 
-        $finished = $stats['division'][$campaign->getAttacker()->getId()]['total'] >= 83 ||
-                    $stats['division'][$campaign->getDefender()->getId()]['total'] >= 83;
+        $finished = $stats['division'][$campaign->getAttacker()->getId()]['total'] >= 94 ||
+                    $stats['division'][$campaign->getDefender()->getId()]['total'] >= 94;
         
         if (!$finished) {
             $fightersData = $stats['fightersData'];
@@ -232,7 +232,7 @@ class MilitaryModule extends Module
     /**
      * Returns information about Military Unit
      * @param  int $id Military Unit ID
-     * @return array     Military Unit's information
+     * @return array Military Unit's information
      */
     public function getUnit($id)
     {

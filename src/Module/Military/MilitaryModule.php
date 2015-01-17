@@ -5,7 +5,6 @@ use Erpk\Harvester\Module\Module;
 use Erpk\Harvester\Exception\ScrapeException;
 use Erpk\Harvester\Client\Selector;
 use Erpk\Common\Citizen\Rank;
-use Erpk\Common\Entity\Campaign;
 use Erpk\Common\Entity\Country;
 use Erpk\Common\DateTime;
 use GuzzleHttp\Exception\ClientException;
@@ -101,7 +100,8 @@ class MilitaryModule extends Module
 
         $campaign->setRegion($region);
         $campaign->setResistance($isResistance);
-        $campaign->_citizenCountry = $countries->find($countryId);
+        $campaign->setChoosenSide($countries->find($countryId));
+        $campaign->setCanFight($xs->findOneOrNull('//div[@class="pvp_location change_residence"]') == null);
         
         return $campaign;
     }
@@ -372,10 +372,15 @@ class MilitaryModule extends Module
      *                               MilitaryModule::SIDE_ATTACKER or
      *                               MilitaryModule::SIDE_DEFENDER or
      *                               other value to choose automatically
+     * @throws \RuntimeException You cannot fight in this campaign (wrong location)
      * @return array             Result information about effect
      */
     public function fight(Campaign $campaign, $side = MilitaryModule::SIDE_AUTO)
     {
+        if (!$campaign->canFight()) {
+            throw new \RuntimeException('Cannot fight in this campaign without changing location.');
+        }
+
         $this->getClient()->checkLogin();
 
         $request = $this->getClient()->post('military/fight-shooot/'.$campaign->getId());
@@ -390,13 +395,13 @@ class MilitaryModule extends Module
                 $sideCountry = $campaign->getDefender();
                 break;
             default:
-                $sideCountry = $campaign->_citizenCountry;
+                $sideCountry = $campaign->getChoosenSide();
                 break;
         }
 
-        if ($sideCountry->getId() != $campaign->_citizenCountry->getId()) {
+        if ($sideCountry->getId() != $campaign->getChoosenSide()->getId()) {
             $this->chooseSide($campaign, $sideCountry);
-            $campaign->_citizenCountry = $sideCountry;
+            $campaign->setChoosenSide($sideCountry);
         }
 
         $request->addPostFields([
@@ -412,7 +417,7 @@ class MilitaryModule extends Module
      * Changes the side country in resistance war
      * @param  Campaign $campaign
      * @param  Country  $country
-     * @throws \Exception You cannot change the side in this campaign
+     * @throws \RuntimeException You cannot change the side in this campaign
      */
     protected function chooseSide(Campaign $campaign, Country $country)
     {
@@ -421,7 +426,7 @@ class MilitaryModule extends Module
                 'military/battlefield-choose-side/'.$campaign->getId().'/'.$country->getId()
             )->send();
         } else {
-            throw new \Exception('Cannot choose side in ordinary campaign (without changing location).');
+            throw new \RuntimeException('Cannot choose side in ordinary campaign (without changing location).');
         }
     }
 

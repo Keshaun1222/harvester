@@ -1,10 +1,15 @@
 <?php
 namespace Erpk\Harvester\Client;
 
+use cURL;
+use GuzzleHttp\Event\BeforeEvent;
+use GuzzleHttp\Message\Response as GuzzleResponse;
 use GuzzleHttp\Query;
 use GuzzleHttp\Post\PostBodyInterface;
 use GuzzleHttp\Post\PostBody;
 use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\Ring\Core;
+use GuzzleHttp\Stream\Stream;
 
 class Request
 {
@@ -69,6 +74,9 @@ class Request
         $this->setHeader('Referer', $referer);
     }
 
+    /**
+     * @return Query
+     */
     public function getQuery()
     {
         return $this->options['query'];
@@ -90,7 +98,7 @@ class Request
         }
     }
 
-    public function send()
+    protected function getAbsoluteUrl()
     {
         if (stripos($this->url, 'http') === 0) {
             $url = $this->url;
@@ -98,10 +106,90 @@ class Request
             $url = '/en' . (empty($this->url) ? '' : '/'.$this->url);
         }
 
-        return $this->client->send($this->internalClient->createRequest(
+        return $url;
+    }
+
+    /**
+     * @param callable $callback The function called after request is complete.
+     *                           It has 1 argument, which is Erpk\Harvester\Client\Response
+     * @return \cURL\Request
+     * @todo Implement proxy binding to cURL\Request
+     */
+    public function createCurlRequest(callable $callback)
+    {
+        $internalRequest = $this->createInternalRequest();
+
+        // intercepting final request with all headers set
+        /**
+         * @var \GuzzleHttp\Message\Request $request
+         */
+        $request = null;
+        $internalRequest->getEmitter()->on('before', function (BeforeEvent $event) use (&$request) {
+            $request = $event->getRequest();
+            $event->intercept(new GuzzleResponse(200)); // cancel request sending
+        });
+
+        $response = $this->client->send($internalRequest);
+
+        // preparing cURL\Request instance
+        $config = $request->getConfig();
+        $requestHeaders = [];
+        foreach ($request->getHeaders() as $key => $val) {
+            $requestHeaders[] = "$key: $val[0]";
+        }
+
+        $rawHeaders = [];
+        $ch = new cURL\Request($request->getUrl());
+        $ch->getOptions()
+            ->set(CURLOPT_RETURNTRANSFER, true)
+            ->set(CURLOPT_CONNECTTIMEOUT, $config['connect_timeout'])
+            ->set(CURLOPT_TIMEOUT, $config['timeout'])
+            ->set(CURLOPT_FOLLOWLOCATION, isset($config['redirect']))
+            ->set(CURLOPT_HTTPHEADER, $requestHeaders)
+            ->set(CURLOPT_HEADERFUNCTION, function ($ch, $line) use (&$rawHeaders) {
+                $rawHeaders[] = $line;
+                return strlen($line);
+            })
+        ;
+
+        if ($request->getMethod() == 'POST') {
+            $ch->getOptions()
+                ->set(CURLOPT_POST, true)
+                ->set(CURLOPT_POSTFIELDS, $request->getBody()->getFields());
+        }
+
+        // adding processing callback function
+        $ch->addListener('complete', function (cURL\Event $event) use ($callback, &$rawHeaders, $request) {
+            $info = $event->response->getInfo();
+            $headers = Core::headersFromLines($rawHeaders);
+            $headers = array_filter($headers, function ($val) {
+                return $val[0] != null;
+            });
+            $internalResponse = new GuzzleResponse(
+                $info['http_code'],
+                $headers,
+                Stream::factory($event->response->getContent())
+            );
+
+            $this->client->getSession()->getCookieJar()->extractCookies($request, $internalResponse);
+
+            $callback(new Response($internalResponse));
+        });
+
+        return $ch;
+    }
+
+    protected function createInternalRequest()
+    {
+        return $this->internalClient->createRequest(
             $this->method,
-            $url,
+            $this->getAbsoluteUrl(),
             $this->options
-        ));
+        );
+    }
+
+    public function send()
+    {
+        return $this->client->send($this->createInternalRequest());
     }
 } 

@@ -1,18 +1,28 @@
 <?php
 namespace Erpk\Harvester\Module\Exchange;
 
+use cURL;
+use Erpk\Harvester\Client\Response;
 use Erpk\Harvester\Module\Module;
 use Erpk\Harvester\Exception\InvalidArgumentException;
 use Erpk\Harvester\Filter;
 use Erpk\Harvester\Client\Selector\Paginator;
 use XPathSelector\Selector;
+use Erpk\Harvester\Client\Request;
+use XPathSelector\Node;
 
 class ExchangeModule extends Module
 {
     const CURRENCY = 0;
     const GOLD     = 1;
-    
-    public function scan($mode, $page = 1)
+
+    /**
+     * @param int $mode
+     * @param int $page
+     * @return Request
+     * @throws InvalidArgumentException
+     */
+    protected function prepareScanRequest($mode, $page = 1)
     {
         switch ($mode) {
             case self::CURRENCY:
@@ -34,9 +44,38 @@ class ExchangeModule extends Module
             'page'           => $page-1,
             'personalOffers' => 0,
         ]);
-        
+
+        return $request;
+    }
+
+    /**
+     * @param int $mode
+     * @param int $page
+     * @return OfferCollection
+     * @throws InvalidArgumentException
+     */
+    public function scan($mode, $page = 1)
+    {
+        $request = $this->prepareScanRequest($mode, $page);
         $response = $request->send();
         return $this->parseOffers($response->json());
+    }
+
+    /**
+     * @param int $mode
+     * @param int $page
+     * @param callable $callback
+     * @return cURL\Request
+     * @throws InvalidArgumentException
+     */
+    public function scanAsync($mode, $page = 1, callable $callback)
+    {
+        $harvesterRequest = $this->prepareScanRequest($mode, $page);
+
+        $curlRequest = $harvesterRequest->createCurlRequest(function (Response $response) use ($callback) {
+            $callback($this->parseOffers($response->json()));
+        });
+        return $curlRequest;
     }
     
     public static function parseOffers($data)
@@ -50,6 +89,9 @@ class ExchangeModule extends Module
         
         $rows = $xs->findAll('//*[@class="exchange_offers"]/tr');
         foreach ($rows as $row) {
+            /**
+             * @var Node $row
+             */
             $url = $row->find('td[1]/a/@href')->extract();
             $offer = new Offer();
             $offer->id         = (int)substr($row->find('td[3]/strong[2]/@id')->extract(), 14);

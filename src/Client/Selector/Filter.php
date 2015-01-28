@@ -42,6 +42,7 @@ class Filter
 
     public static function parseInt($n)
     {
-        return (int)trim(str_replace(',', '', $n));
+        $n = (float)trim(str_replace(',', '', $n));
+        return $n < PHP_INT_MAX ? (int)$n : $n;
     }
 }

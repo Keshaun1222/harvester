@@ -480,14 +480,11 @@ class MilitaryModule extends Module
         $request = $this->getClient()->get();
         $response = $request->send();
         $html = $response->getBody(true);
-
-        $hxs = $response->xpath();
-        $groupId = (int)$hxs->find('//input[@type="hidden"][@id="groupId"]/@value')->extract();
-
         preg_match('/var mapDailyOrder = (.*);/', $html, $matches);
-
+        preg_match('/groupId\s*:\s*(\d+),/', $html, $groupId);
+        
         $result = json_decode($matches[1], true);
-        $result['groupId'] = $groupId;
+        $result['groupId'] = (int)$groupId[1];
         return $result;
     }
 

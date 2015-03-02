@@ -7,16 +7,19 @@ use Erpk\Harvester\Exception\ScrapeException;
 use Erpk\Harvester\Exception\InvalidArgumentException;
 use Erpk\Harvester\Client\Selector;
 use Erpk\Harvester\Module\Module;
+use Erpk\Harvester\Client\Response;
+use Erpk\Common\Entity\Country;
+use Erpk\Common\Entity\Industry;
 
 class MarketModule extends Module
 {
-    public function scan(Entity\Country $country, Entity\Industry $industry, $quality, $page = 1)
+    protected function prepareScanRequest(Country $country, Industry $industry, $quality, $page = 1)
     {
         $page = Filter::page($page);
         $quality = Filter::positiveInteger($quality);
-        
+
         $code = $industry->getCode();
-        switch($code) {
+        switch ($code) {
             case 'food':
             case 'weapons':
             case 'house':
@@ -39,30 +42,51 @@ class MarketModule extends Module
                 }
                 break;
         }
-        
-        $this->getClient()->checkLogin();
+
         $request = $this->getClient()->get(
             'economy/market/'.$country->getId().'/'.
             $industry->getId().'/'.$quality.'/citizen/0/price_asc/'.$page
         );
+        return $request;
+    }
+
+    public function scan(Country $country, Industry $industry, $quality, $page = 1)
+    {
+        $this->getClient()->checkLogin();
+
+        $request = $this->prepareScanRequest($country, $industry, $quality, $page);
         $response = $request->send();
-        
-        $offers = [];
-        $this->parseOffers(
-            function ($offer) use (&$offers, $country, $industry, $quality) {
+
+        $offers = $this->parseOffers($response->getBody(true));
+        foreach ($offers as $offer) {
+            $offer->country  = $country;
+            $offer->industry = $industry;
+            $offer->quality  = $quality;
+        }
+
+        return $offers;
+    }
+
+    public function scanAsync(Entity\Country $country, Entity\Industry $industry, $quality, $page = 1, callable $callback)
+    {
+        $this->getClient()->checkLogin();
+
+        $request = $this->prepareScanRequest($country, $industry, $quality, $page);
+
+        $curlRequest = $request->createCurlRequest(function (Response $response) use ($callback, $country, $industry, $quality) {
+            $offers = $this->parseOffers($response->getBody(true));
+            foreach ($offers as $offer) {
                 $offer->country  = $country;
                 $offer->industry = $industry;
                 $offer->quality  = $quality;
-                $offers[] = $offer;
-            },
-            $response->getBody(true),
-            $page
-        );
-        
-        return $offers;
+            }
+            $callback($offers);
+        });
+
+        return $curlRequest;
     }
     
-    protected function parseOffers($callback, $html, $page)
+    protected function parseOffers($html)
     {
         if (stripos($html, 'There are no market offers matching your search.') !== false) {
             return [];
@@ -74,6 +98,7 @@ class MarketModule extends Module
             return [];
         }
 
+        $offers = [];
         foreach ($rows as $row) {
             $id         = $row->select('td/@id')->extract();
             $id         = substr($id, strripos($id, '_') + 1);
@@ -88,8 +113,9 @@ class MarketModule extends Module
             $offer->sellerId = (int)substr($sellerUrl, strripos($sellerUrl, '/')+1);
             $offer->sellerName = trim($row->select('td[@class="m_provider"][1]/a')->extract());
             
-            $callback($offer);
+            $offers[] = $offer;
         }
+        return $offers;
     }
     
     public function buy(Offer $offer, $amount)

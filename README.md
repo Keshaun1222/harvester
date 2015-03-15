@@ -112,12 +112,14 @@ $unit = $module->getUnit(5);
 // Get information about regiment in Military Unit
 $regiment = $module->getRegiment(5, 1);
 
-// Choose side in resistance war
-$module->chooseSide(42113, MilitaryModule::SIDE_ATTACKER);
 // Choose weapon Q7 for particular campaign
-$module->changeWeapon(42113, 7);
-// Make single kill in campaign
-$module->fight(42113);
+$module->changeWeapon($campaign, 7);
+// Make single kill in campaign at default side
+$module->fight($campaign);
+// Make single kill in campaign at attacker side
+$module->fight($campaign, MilitaryModule::SIDE_ATTACKER);
+// Make single kill in campaign at defender side
+$module->fight($campaign, MilitaryModule::SIDE_DEFENDER);
 
 // Check Daily Order status
 $doStatus = $module->getDailyOrderStatus();

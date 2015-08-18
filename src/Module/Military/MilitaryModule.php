@@ -387,18 +387,7 @@ class MilitaryModule extends Module
         $request->markXHR();
         $request->setRelativeReferer('military/battlefield/'.$campaign->getId());
 
-        switch ($side) {
-            case self::SIDE_ATTACKER:
-                $sideCountry = $campaign->getAttacker();
-                break;
-            case self::SIDE_DEFENDER:
-                $sideCountry = $campaign->getDefender();
-                break;
-            default:
-                $sideCountry = $campaign->getChoosenSide();
-                break;
-        }
-
+        $sideCountry = $campaign->getSide($side);
         if ($sideCountry->getId() != $campaign->getChoosenSide()->getId()) {
             $this->chooseSide($campaign, $sideCountry);
             $campaign->setChoosenSide($sideCountry);
@@ -482,7 +471,7 @@ class MilitaryModule extends Module
         $html = $response->getBody(true);
         preg_match('/var mapDailyOrder = (.*);/', $html, $matches);
         preg_match('/groupId\s*:\s*(\d+),/', $html, $groupId);
-        
+
         $result = json_decode($matches[1], true);
         $result['groupId'] = (int)$groupId[1];
         return $result;

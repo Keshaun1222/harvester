@@ -70,6 +70,23 @@ class Campaign
     }
 
     /**
+     * @param int $sideConstant MilitaryModule::SIDE_ATTACKER or MilitaryModule::SIDE_DEFENDER
+     * @return Country
+     */
+    public function getSide($sideConstant)
+    {
+        if ($sideConstant === MilitaryModule::SIDE_ATTACKER) {
+            return $this->attacker;
+        } else if ($sideConstant === MilitaryModule::SIDE_DEFENDER) {
+            return $this->defender;
+        } else if ($sideConstant === MilitaryModule::SIDE_AUTO) {
+            return $this->citizenSide;
+        } else {
+            throw new \InvalidArgumentException("Invalid side constant.");
+        }
+    }
+
+    /**
      * @param Country $country
      */
     public function setAttacker(Country $country)

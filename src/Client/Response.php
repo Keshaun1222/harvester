@@ -52,7 +52,7 @@ class Response
      */
     public function getLocation()
     {
-        return $this->internalResponse->getHeader('Location');
+        return $this->internalResponse->getHeader('Location')[0];
     }
 
     /**

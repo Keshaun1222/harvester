@@ -1,45 +1,65 @@
 <?php
 namespace Erpk\Harvester\Client;
 
-use GuzzleHttp\Message\Response as GuzzleResponse;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
 use XPathSelector\Selector;
 
 class Response
 {
     /**
-     * @var GuzzleResponse
+     * @var ResponseInterface
      */
     protected $internalResponse;
 
-    public function __construct($response)
+    /**
+     * @param ResponseInterface $response
+     */
+    public function __construct(ResponseInterface $response)
     {
         $this->internalResponse = $response;
     }
 
+    /**
+     * @return Selector
+     */
     public function xpath()
     {
         return Selector::loadHTML($this->getBody(true));
     }
 
+    /**
+     * @param bool|true $text
+     * @return StreamInterface|string
+     */
     public function getBody($text = true)
     {
         $body = $this->internalResponse->getBody();
         return $text ? $body->getContents() : $body;
     }
 
+    /**
+     * @return bool
+     */
     public function isRedirect()
     {
         $status = $this->internalResponse->getStatusCode();
         return $status >= 300 && $status < 400;
     }
 
+    /**
+     * @return string[]
+     */
     public function getLocation()
     {
         return $this->internalResponse->getHeader('Location');
     }
 
+    /**
+     * @return mixed
+     */
     public function json()
     {
-        return $this->internalResponse->json();
+        return json_decode($this->getBody(), true);
     }
 }

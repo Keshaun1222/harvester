@@ -2,14 +2,9 @@
 namespace Erpk\Harvester\Client;
 
 use cURL;
-use GuzzleHttp\Event\BeforeEvent;
-use GuzzleHttp\Message\Response as GuzzleResponse;
-use GuzzleHttp\Query;
-use GuzzleHttp\Post\PostBodyInterface;
-use GuzzleHttp\Post\PostBody;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Client as GuzzleClient;
-use GuzzleHttp\Ring\Core;
-use GuzzleHttp\Stream\Stream;
+use GuzzleHttp\Psr7\Uri;
 
 class Request
 {
@@ -36,17 +31,26 @@ class Request
     /**
      * @var array
      */
-    protected $options;
+    protected $options = ['headers' => []];
 
-    public function __construct(GuzzleClient $internalClient, Client $client, $method, $url)
+    /**
+     * @var Query
+     */
+    protected $query;
+
+    /**
+     * @param ClientInterface $internalClient
+     * @param Client $client
+     * @param $method
+     * @param $url
+     */
+    public function __construct(ClientInterface $internalClient, Client $client, $method, $url)
     {
         $this->url = $url;
-        $this->options = [
-            'headers' => [], 'query' => new Query(), 'body' => null
-        ];
         $this->method = $method;
         $this->client = $client;
         $this->internalClient = $internalClient;
+        $this->query = new Query();
     }
 
     public function disableCookies()
@@ -64,14 +68,15 @@ class Request
         $this->setHeader('X-Requested-With', 'XMLHttpRequest');
     }
 
-    public function setRelativeReferer($url = '')
+    /**
+     * @param string $rel
+     */
+    public function setRelativeReferer($rel = '')
     {
-        $referer = $this->internalClient->getBaseUrl().'/en';
-        if (!empty($url)) {
-            $referer .= '/'.$url;
-        }
-
-        $this->setHeader('Referer', $referer);
+        $this->setHeader(
+            'Referer',
+            (string)Uri::resolve($this->client->getBaseUri(), $rel)
+        );
     }
 
     /**
@@ -79,26 +84,33 @@ class Request
      */
     public function getQuery()
     {
-        return $this->options['query'];
+        return $this->query;
     }
 
+    /**
+     * @param string $key
+     * @param string $value
+     */
     public function setHeader($key, $value)
     {
         $this->options['headers'][$key] = $value;
     }
 
-    public function addPostFields($fields)
+    /**
+     * @param string[] $fields
+     */
+    public function addPostFields(array $fields)
     {
-        if (!($this->options['body'] instanceof PostBodyInterface)) {
-            $this->options['body'] = new PostBody();
-        }
-
+        $this->options['form_params'] = [];
         foreach ($fields as $key => $value) {
-            $this->options['body']->setField($key, $value);
+            $this->options['form_params'][$key] = $value;
         }
     }
 
-    protected function getAbsoluteUrl()
+    /**
+     * @return string
+     */
+    protected function getAbsoluteUri()
     {
         if (stripos($this->url, 'http') === 0) {
             $url = $this->url;
@@ -117,12 +129,9 @@ class Request
      */
     public function createCurlRequest(callable $callback)
     {
-        $internalRequest = $this->createInternalRequest();
+        /*$internalRequest = $this->createInternalRequest();
 
         // intercepting final request with all headers set
-        /**
-         * @var \GuzzleHttp\Message\Request $request
-         */
         $request = null;
         $internalRequest->getEmitter()->on('before', function (BeforeEvent $event) use (&$request) {
             $request = $event->getRequest();
@@ -176,20 +185,19 @@ class Request
             $callback(new Response($internalResponse));
         });
 
-        return $ch;
+        return $ch;*/
     }
 
-    protected function createInternalRequest()
-    {
-        return $this->internalClient->createRequest(
-            $this->method,
-            $this->getAbsoluteUrl(),
-            $this->options
-        );
-    }
-
+    /**
+     * @return Response
+     */
     public function send()
     {
-        return $this->client->send($this->createInternalRequest());
+        $this->options['query'] = $this->query->toArray();
+        return new Response($this->internalClient->request(
+            $this->method,
+            $this->getAbsoluteUri(),
+            $this->options
+        ));
     }
-} 
+}

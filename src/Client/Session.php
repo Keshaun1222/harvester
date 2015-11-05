@@ -1,6 +1,7 @@
 <?php
 namespace Erpk\Harvester\Client;
 
+use Erpk\Harvester\Exception\ConfigurationException;
 use GuzzleHttp\Cookie\FileCookieJar;
 use GuzzleHttp\Cookie\SetCookie;
 
@@ -24,9 +25,26 @@ class Session
         'token'     =>  null,
         'citizen'   => ['id' => null, 'name' => null]
     ];
-    
-    public function __construct($savePath)
+
+    /**
+     * @var string
+     */
+    private $email;
+
+    /**
+     * @var string
+     */
+    private $password;
+
+    /**
+     * @param string $savePath
+     * @param string $email
+     * @param string $password
+     */
+    public function __construct($savePath, $email, $password)
     {
+        $this->email = $email;
+        $this->password = $password;
         $this->savePath = $savePath;
 
         if (file_exists($savePath.'.sess')) {
@@ -34,6 +52,30 @@ class Session
         }
 
         $this->cookieJar = new FileCookieJar($savePath.'.cookies');
+    }
+
+    /**
+     * @return string
+     * @throws ConfigurationException
+     */
+    public function getEmail()
+    {
+        if (!isset($this->email)) {
+            throw new ConfigurationException('Account e-mail address not specified');
+        }
+        return $this->email;
+    }
+
+    /**
+     * @return string
+     * @throws ConfigurationException
+     */
+    public function getPassword()
+    {
+        if (!isset($this->password)) {
+            throw new ConfigurationException('Account password not specified');
+        }
+        return $this->password;
     }
 
     public function save()

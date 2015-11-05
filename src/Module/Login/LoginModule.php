@@ -10,13 +10,15 @@ class LoginModule extends Module
     public function login()
     {
         $client = $this->getClient();
+        $session = $this->getSession();
+
         $login = $client->post('login');
         $login->followRedirects();
         $login->setRelativeReferer();
         $login->addPostFields([
             '_token'            =>  md5(time()),
-            'citizen_email'     =>  $client->getEmail(),
-            'citizen_password'  =>  $client->getPassword(),
+            'citizen_email'     =>  $session->getEmail(),
+            'citizen_password'  =>  $session->getPassword(),
             'remember'          =>  1
         ]);
 

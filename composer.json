@@ -8,10 +8,13 @@
         "ext-curl": "*",
         "ext-json": "*",
         "ext-dom": "*",
-        "guzzlehttp/guzzle": "~5.0.0",
-        "erpk/common": "~0.3.0",
+        "guzzlehttp/guzzle": "^6.1",
+        "erpk/common": "^0.3",
         "stil/xpath-selector": "~2.0.0",
         "stil/curl-easy": "~1.1.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "5.0.*"
     },
     "autoload": {
         "psr-4": {

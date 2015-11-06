@@ -26,7 +26,7 @@ class Request
     /**
      * @var string
      */
-    protected $url;
+    protected $uri;
 
     /**
      * @var array
@@ -42,11 +42,11 @@ class Request
      * @param ClientInterface $internalClient
      * @param Client $client
      * @param $method
-     * @param $url
+     * @param string $uri
      */
-    public function __construct(ClientInterface $internalClient, Client $client, $method, $url)
+    public function __construct(ClientInterface $internalClient, Client $client, $method, $uri)
     {
-        $this->url = $url;
+        $this->uri = $uri;
         $this->method = $method;
         $this->client = $client;
         $this->internalClient = $internalClient;
@@ -112,13 +112,10 @@ class Request
      */
     protected function getAbsoluteUri()
     {
-        if (stripos($this->url, 'http') === 0) {
-            $url = $this->url;
-        } else {
-            $url = '/en' . (empty($this->url) ? '' : '/'.$this->url);
-        }
-
-        return $url;
+        $base = $this->client->getBaseUri();
+        return !empty($this->uri)
+            ? Uri::resolve(new Uri($base . '/'), $this->uri)
+            : $base;
     }
 
     /**

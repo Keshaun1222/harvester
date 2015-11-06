@@ -1,10 +1,15 @@
 <?php
 namespace Erpk\Harvester\Module\Management;
 
+use Erpk\Harvester\Client\Response;
 use Erpk\Harvester\Client\Selector;
+use Erpk\Harvester\Exception\InvalidArgumentException;
+use Erpk\Harvester\Exception\ScrapeException;
 use Erpk\Harvester\Filter;
 use Erpk\Harvester\Module\Module;
 use Erpk\Common\Entity;
+use GuzzleHttp\Exception\ClientException;
+use XPathSelector\Node;
 
 class FriendsModule extends Module
 {
@@ -267,179 +272,198 @@ class FriendsModule extends Module
         }
 
         if (isset($url)) {
-           $crequest = $this->getClient()->post($url);
-           $cresponse = $crequest->send();
-           $newRequest = $this->getClient()->get($cresponse->getLocation());
-           $newResponse = $newRequest->send();
-           $html = $newResponse->getBody(true);
+            $crequest = $this->getClient()->post($url);
+            $cresponse = $crequest->send();
+            $newRequest = $this->getClient()->get($cresponse->getLocation());
+            $newResponse = $newRequest->send();
+            $html = $newResponse->getBody(true);
 
-           $hxs = Selector\XPath::loadHTML($html);
-           $node = $hxs->select('//table[@class="success_message"]');
-           if ($node->hasResults()) {
-               return $node->select('tr/td')->extract();
-           }
+            $hxs = Selector\XPath::loadHTML($html);
+            $node = $hxs->select('//table[@class="success_message"]');
+            if ($node->hasResults()) {
+                return $node->select('tr/td')->extract();
+            }
         }
 
         return false;
     }
 
+    /**
+     * @param int $citizenId
+     * @return bool
+     * @throws InvalidArgumentException
+     */
     public function isFriend($citizenId)
     {
         $citizenId = Filter::id($citizenId);
         $this->getClient()->checkLogin();
-        $request = $this->getClient()->get('citizen/profile/'.$citizenId);
-        $response = $request->send();
-        $html = $response->getBody(true);
-
-        $hxs = Selector\XPath::loadHTML($html);
-        if ($hxs->select('//a[@class="action_friend tip"]')->hasResults()) {
-            return false;
-        }
-        if ($hxs->select('//a[@class="action_friend_remove tip"]')->hasResults()) {
-            return true;
-        }
+        $hxs = $this->getClient()->get('citizen/profile/'.$citizenId)->send()->xpath();
+        return $hxs->findOneOrNull('//a[@class="action_friend_remove tip"]') !== null;
     }
 
+    /**
+     * @param int $citizenId
+     * @param int $page
+     * @return array
+     * @throws InvalidArgumentException
+     * @throws ScrapeException
+     */
     public function listFriendsbyPage($citizenId, $page)
     {
         $citizenId = Filter::id($citizenId);
         $this->getClient()->checkLogin();
-        $request = $this->getClient()->get('main/citizen-friends/'.$citizenId.'/'.$page.'/list');
 
-        $notloaded = true;
-        while ($notloaded) {
-            $response = $request->send();
-            $html = $response->json()['content'];
-            $notloaded = false;
+        try {
+            $response = $this->getClient()->get("main/citizen-friends/$citizenId/$page/list")->send();
+        } catch (ClientException $ex) {
+            if ($ex->getCode() == 404) {
+                return [];
+            }
         }
 
-        $hxs = Selector\XPath::loadHTML($html);
-        $friendsListItems = $hxs->select('//tr');
+        $hxs = \XPathSelector\Selector::loadHTML($response->json()['content']);
 
-        if (!$friendsListItems->hasResults()) {
-            return array();
-        }
-
-        $friends = [];
-        foreach ($friendsListItems as $friendItem) {
-            $link = $friendItem->select('td[@class="friend_info"]/a/@href')->extract();
+        return $hxs->findAll('//tr')->map(function (Node $friendItem) {
+            $link = $friendItem->find('td[@class="friend_info"]/a/@href')->extract();
             $citizenId = substr($link, strripos($link, '/') + 1);
-            $citizenName = $friendItem->select('td[@class="friend_info"]/a/@title')->extract();
+            $citizenName = $friendItem->find('td[@class="friend_info"]/a/@title')->extract();
+
             $isDead = false;
-            if ($friendItem->select('@class')->hasResults()) {
-                $isDead = trim($friendItem->select('@class')->extract()) == 'dead';
-            }
-            $avatarUrl = $friendItem->select('td[@class="friend_info"]/a/img/@src')->extract();
-            if ($friendItem->select('td[@class="actions"]')->hasResults()) {
-                $removeUrl = $friendItem->select('td[@class="actions"]/div/a[@class="act remove"]/@href')->extract();
+            if ($friendItem->findOneOrNull('@class') !== null) {
+                $isDead = trim($friendItem->find('@class')->extract()) == 'dead';
             }
 
-            $friend = array();
-            $friend['citizenId'] = (int)$citizenId;
-            $friend['citizenName'] = $citizenName;
-            $friend['isDead'] = (bool)$isDead;
-            $friend['avatarUrl'] = $avatarUrl;
+            $avatarUrl = $friendItem->find('td[@class="friend_info"]/a/img/@src')->extract();
+            if ($friendItem->findOneOrNull('td[@class="actions"]') != null) {
+                $removeUrl = $friendItem->find('td[@class="actions"]/div/a[@class="act remove"]/@href')->extract();
+            }
+
+            $friend = [
+                'citizenId' => (int)$citizenId,
+                'citizenName' => $citizenName,
+                'isDead' => (bool)$isDead,
+                'avatarUrl' => $avatarUrl,
+            ];
+
             if (isset($removeUrl)) {
                 $friend['removeUrl'] = $removeUrl;
             }
 
-            $friends[] = $friend;
-        }
-
-        return $friends;
+            return $friend;
+        });
     }
 
-    public function iterateFriends($citizenId, $callback)
+    /**
+     * @param int $citizenId
+     * @param callable $callback
+     */
+    public function iterateFriends($citizenId, callable $callback)
     {
-        $friends = array();
-
         $i = 1;
         do {
             $page = $this->listFriendsbyPage($citizenId, $i);
 
             $notendpage = !empty($page);
             foreach ($page as $friend) {
-            	$callback($friend);
+                $callback($friend);
             }
             $i++;
         } while ($notendpage);
-
-        return $friends;
     }
 
+    /**
+     * @param int $citizenId
+     * @return bool
+     */
     public function addFriend($citizenId)
     {
         return $this->updateFriend($citizenId);
     }
 
+    /**
+     * @param int $citizenId
+     * @return bool
+     */
     public function removeFriend($citizenId)
     {
         return $this->updateFriend($citizenId, 'remove');
     }
 
-    protected function parseDonation($html)
+    /**
+     * @param Response $response
+     * @return bool
+     */
+    protected function parseDonation(Response $response)
     {
-        $hxs = Selector\XPath::loadHTML($html);
-        $node = $hxs->select('//table[@class="info_message"]');
-        if ($node->hasResults()) {
-            return $node->select('tr/td')->extract();
-        }
-
-        return false;
+        $hxs = $response->xpath();
+        $msg = $hxs->findOneOrNull('//table[@class="info_message"]/tr[1]/td[1]');
+        return $msg !== null ? $msg->extract() : false;
     }
 
-    protected function donate($citizenId, $amount, $currencyId)
+    /**
+     * @param int $citizenId
+     * @param string $action "money" or "items"
+     * @param int $amount
+     * @param array $postFields
+     * @return bool
+     * @throws InvalidArgumentException
+     */
+    protected function donate($citizenId, $action, $amount, array $postFields)
     {
         $citizenId = Filter::id($citizenId);
         $this->getClient()->checkLogin();
 
-        $request = $this->getClient()->post('economy/donate-money-action');
-        $request->setRelativeReferer('economy/donate-money/'.$citizenId);
-        $request->addPostFields([
-            'citizen_id'    => $citizenId,
+        $postFields = array_merge([
+            'citizen_id' => $citizenId,
             'amount' => $amount,
-            'currency_id' => $currencyId,
             '_token' => $this->getSession()->getToken()
-        ]);
+        ], $postFields);
 
-        $response = $request->send();
+        $request = $this->getClient()->post("economy/donate-$action-action");
+        $request->setRelativeReferer("economy/donate-$action/$citizenId");
+        $request->followRedirects();
+        $request->addPostFields($postFields);
 
-        $newRequest = $this->getClient()->get($response->getLocation());
-        $newResponse = $newRequest->send();
-
-        return $this->parseDonation($newResponse->getBody(true));
+        return $this->parseDonation($request->send());
     }
 
+    /**
+     * @param int $citizenId
+     * @param float $amount
+     * @return bool
+     */
     public function donateMoney($citizenId, $amount)
     {
-        return $this->donate($citizenId, $amount, self::COUNTRY_CURRENCY);
+        return $this->donate($citizenId, 'money', $amount, [
+            'currency_id' => self::COUNTRY_CURRENCY
+        ]);
     }
 
+    /**
+     * @param int $citizenId
+     * @param float $amount
+     * @return bool
+     */
     public function donateGold($citizenId, $amount)
     {
-        return $this->donate($citizenId, $amount, self::GOLD);
+        return $this->donate($citizenId, 'money', $amount, [
+            'currency_id' => self::GOLD
+        ]);
     }
 
+    /**
+     * @param int $citizenId
+     * @param int $amount
+     * @param Entity\Industry $industry
+     * @param int $quality
+     * @return bool
+     * @throws InvalidArgumentException
+     */
     public function donateItems($citizenId, $amount, Entity\Industry $industry, $quality)
     {
-        $citizenId = Filter::id($citizenId);
-        $this->getClient()->checkLogin();
-
-        $request = $this->getClient()->post('economy/donate-items-action');
-        $request->setRelativeReferer('economy/donate-items/'.$citizenId);
-        $request->addPostFields([
-            '_token'        => $this->getSession()->getToken(),
-            'citizen_id'    => $citizenId,
-            'amount'        => $amount,
-            'industry_id'   => $industry->getId(),
-            'quality'       => $quality
+        return $this->donate($citizenId, 'items', $amount, [
+            'industry_id' => $industry->getId(),
+            'quality'     => $quality
         ]);
-
-        $response = $request->send();
-
-        $newRequest = $this->getClient()->get($response->getLocation());
-        $newResponse = $newRequest->send();
-
-        return $this->parseDonation($newResponse->getBody(true));
     }
 }

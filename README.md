@@ -43,11 +43,13 @@ Client is an object required in every Harvester module. How to create it?
 <?php
 require __DIR__.'/vendor/autoload.php';
 
-use Erpk\Harvester\Client\Client;
+use Erpk\Harvester\Client\ClientBuilder;
 
-$client = new Client;
-$client->setEmail('your_erepublik@email.com');
-$client->setPassword('your_erepublik_password');
+$builder = new ClientBuilder();
+$builder->setEmail('your_erepublik@email.com');
+$builder->setPassword('your_erepublik_password');
+
+$client = $builder->getClient();
 ```
 
 Proxy
@@ -58,20 +60,9 @@ use Erpk\Harvester\Client\Proxy\HttpProxy;
 // Create new HttpProxy object
 $proxy = new HttpProxy('59.47.43.90', 8080);
 // Make client using that proxy
-$client->setProxy($proxy);
+$builder->setProxy($proxy);
 
-// You can also use NetworkInterfaceProxy
-use Erpk\Harvester\Client\Proxy\NetworkInterfaceProxy;
-$interfaceProxy = new NetworkInterfaceProxy('venet0');
-$client->setProxy($proxy);
-
-// How to remove proxy?
-$client->removeProxy();
-
-// You need to check if Client already has proxy?
-if ($client->hasProxy()) {
-    echo "I'm using proxy.";
-}
+$client = $builder->getClient();
 ```
 
 3rd party modules

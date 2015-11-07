@@ -8,7 +8,9 @@ use Erpk\Harvester\Client\Selector\Paginator;
 use Erpk\Common\DateTime;
 use Erpk\Common\EntityManager;
 use Erpk\Common\Entity\Country;
+use GuzzleHttp\Psr7\Uri;
 use XPathSelector\Exception\NodeNotFoundException;
+use XPathSelector\Node;
 
 class PressModule extends Module
 {
@@ -57,23 +59,28 @@ class PressModule extends Module
         $request->send();
     }
 
-    public static function parseDate($string)
+    /**
+     * @param string $str
+     * @return DateTime
+     */
+    public static function parseDate($str)
     {
-        $date = str_replace(',', '', trim($string));
-        $date = explode(' ', $date);
-        if ($date[2] == 'ago') {
-            return new DateTime(implode(' ', $date));
+        $matches = [];
+        if (preg_match('/Day ([\d,]+), (\d{1,2}):(\d{1,2})/', $str, $matches)) {
+            $day = (int)str_replace(',', '', $matches[1]);
+            $date = DateTime::createFromDay($day);
+            $date->setTime((int)$matches[2], (int)$matches[3], 0);
+            return $date;
+        } else {
+            $str = str_replace('one ', '1 ', $str);
+            return new DateTime($str);
         }
-        $time = explode(':', $date[2]);
-        $date = DateTime::createFromDay($date[1]);
-        $date->setTime((int)$time[0], (int)$time[1], 0);
-        return $date;
     }
 
-    public static function parseArticleComments($xs)
+    public static function parseArticleComments(Node $xs)
     {
         $comments = $xs->findAll('div[contains(concat(" ", normalize-space(@class), " "), " comment-holder ")]');
-        $list = $comments->map(function ($node) use ($xs) {
+        $list = $comments->map(function (Node $node) use ($xs) {
             $class = $node->find('@class')->extract();
             if (preg_match('/indent-level-(\d+)/', $class, $level) > 0) {
                 $level = (int)$level[1];
@@ -159,7 +166,7 @@ class PressModule extends Module
             //
             if ($after['level'] > $before['level']) {
                 $levels[] = $before['id'];
-            } else if ($after['level'] < $before['level']) {
+            } elseif ($after['level'] < $before['level']) {
                 for ($i = $after['level']; $i > $before['level']; $i--) {
                     array_pop($levels);
                 }
@@ -178,12 +185,13 @@ class PressModule extends Module
     public function getArticle($id)
     {
         $this->getClient()->checkLogin();
-        $location = $this->getClient()->get('article/'.$id.'/1/20')->send()->getLocation();
-        if ($location === '/en') {
-            throw new Exception\ArticleNotFoundException('Article with ID '.$id.' has not been found.');
+        $url = $this->getClient()->get("article/$id/1/20")->send()->getLocation();
+
+        if (stripos($url, 'article') === false) {
+            throw new Exception\ArticleNotFoundException("Article with ID $id has not been found.");
         }
 
-        $xs = $this->getClient()->get($this->getClient()->getBaseUrl().$location)->send()->xpath();
+        $xs = $this->getClient()->get($url)->send()->xpath();
 
         $head = $xs->find('//div[@class="newspaper_head"]');
         $date = $xs->find('//div[@class="post_details"]/em[@class="date"]');
@@ -199,7 +207,7 @@ class PressModule extends Module
 
         $article = [
             'id'  => $id,
-            'url' => $this->getClient()->getBaseUrl().$location,
+            'url' => Uri::resolve($this->getClient()->getBaseUri(), $url),
             'date' => self::parseDate($date->extract()),
             'title' => $xs->find('//div[@class="post_content"][1]/h2[1]/a[1]')->extract(),
             'votes' => (int)trim($xs->find('//strong[@class="numberOfVotes_'.$id.'"][1]')->extract()),

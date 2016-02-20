@@ -1,13 +1,13 @@
 <?php
 namespace Erpk\Harvester\Module\Country;
 
-use Erpk\Harvester\Module\Module;
-use Erpk\Harvester\Exception\ScrapeException;
-use XPathSelector\Selector;
-use XPathSelector\Node;
-use XPathSelector\NodeList;
 use Erpk\Common\Entity;
 use Erpk\Harvester\Client\Selector\Filter;
+use Erpk\Harvester\Exception\ScrapeException;
+use Erpk\Harvester\Module\Module;
+use XPathSelector\Node;
+use XPathSelector\NodeList;
+use XPathSelector\Selector;
 
 class CountryModule extends Module
 {
@@ -106,10 +106,10 @@ class CountryModule extends Module
             if (in_array($resourceName, ['Grain', 'Fish', 'Cattle', 'Deer', 'Fruits'])) {
                 $result['bonuses']['frm'] += $bonusDecimal;
                 $result['bonuses']['food'] += $bonusDecimal;
-            } else if (in_array($resourceName, ['Iron', 'Saltpeter', 'Rubber', 'Aluminum', 'Oil'])) {
+            } elseif (in_array($resourceName, ['Iron', 'Saltpeter', 'Rubber', 'Aluminum', 'Oil'])) {
                 $result['bonuses']['wrm'] += $bonusDecimal;
                 $result['bonuses']['weapons'] += $bonusDecimal;
-            } else if (in_array($resourceName, ['Sand', 'Clay', 'Wood', 'Limestone', 'Granite'])) {
+            } elseif (in_array($resourceName, ['Sand', 'Clay', 'Wood', 'Limestone', 'Granite'])) {
                 $result['bonuses']['hrm'] += $bonusDecimal;
                 $result['bonuses']['house'] += $bonusDecimal;
             }
@@ -140,7 +140,9 @@ class CountryModule extends Module
         }
         
         /* SALARY */
-        $salary = $economy->findAll('h2[text()="Salary" and @class="section"]/following-sibling::div[1]/table/tr[position()>1]');
+        $salary = $economy->findAll(
+            'h2[text()="Salary" and @class="section"]/following-sibling::div[1]/table/tr[position()>1]'
+        );
         foreach ($salary as $k => $tr) {
             $i = $tr->findAll('td[position()>=1 and position()<=2]/span');
             /**

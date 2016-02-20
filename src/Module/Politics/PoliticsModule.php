@@ -1,11 +1,11 @@
 <?php
 namespace Erpk\Harvester\Module\Politics;
 
-use Erpk\Harvester\Module\Module;
-use Erpk\Harvester\Exception\ScrapeException;
-use Erpk\Harvester\Exception\NotFoundException;
 use Erpk\Harvester\Client\Selector;
+use Erpk\Harvester\Exception\NotFoundException;
+use Erpk\Harvester\Exception\ScrapeException;
 use Erpk\Harvester\Filter;
+use Erpk\Harvester\Module\Module;
 
 class PoliticsModule extends Module
 {
@@ -50,8 +50,8 @@ class PoliticsModule extends Module
         ];
         
         $result['congress']  = [
-            'members'   =>  (int)trim($congress->find('div[1]/div[1]/div[1]/p[1]/span[1]')->extract()),
-            'share'     =>  ((float)rtrim(trim($congress->find('div[1]/div[1]/div[1]/p[1]/span[1]')->extract()), '%'))/100
+            'members' => (int)trim($congress->find('div[1]/div[1]/div[1]/p[1]/span[1]')->extract()),
+            'share' => ((float)rtrim(trim($congress->find('div[1]/div[1]/div[1]/p[1]/span[1]')->extract()), '%'))/100
         ];
         
         return $result;

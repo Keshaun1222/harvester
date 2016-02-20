@@ -1,10 +1,11 @@
 <?php
 namespace Erpk\Harvester\Module\JobMarket;
 
-use Erpk\Harvester\Module\Module;
-use XPathSelector\Selector;
-use Erpk\Harvester\Filter;
 use Erpk\Common\Entity;
+use Erpk\Harvester\Filter;
+use Erpk\Harvester\Module\Module;
+use XPathSelector\Node;
+use XPathSelector\Selector;
 
 class JobMarketModule extends Module
 {
@@ -21,20 +22,17 @@ class JobMarketModule extends Module
     
     public static function parseOffers($html)
     {
-        $offers = [];
-
         $hxs = Selector::loadHTML($html);
-        foreach ($hxs->findAll('//*[@class="salary_sorted"]/tr') as $row) {
+        return $hxs->findAll('//*[@class="salary_sorted"]/tr')->map(function (Node $row) {
             $url = $row->find('td/a/@href')->extract();
-            $offers[] = [
+            return [
                 'employer' => [
                     'id' => (int)substr($url, strrpos($url, '/')+1),
                     'name' => $row->find('td/a/@title')->extract()
                 ],
                 'salary' => (int)$row->find('td[4]/strong')->extract()+
-                (float)substr($row->find('td[4]/sup')->extract(), 1)/100
+                    (float)substr($row->find('td[4]/sup')->extract(), 1)/100
             ];
-        }
-        return $offers;
+        });
     }
 }

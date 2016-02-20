@@ -15,15 +15,15 @@ class Message
 
     public function toArray()
     {
-        return array(
-                'threadId'  =>  $this->threadId,
-                'senderId'  =>  $this->senderId,
-                'senderName'  =>  $this->senderName,
-                'recieverIds'   =>  $this->recieverIds,
-                'recieverNames'   =>  $this->recieverNames,
-                'time'    =>  $this->time,
-                'unread'    =>  $this->unread,
-                'body'    =>  $this->body,
-        );
+        return [
+            'threadId' => $this->threadId,
+            'senderId' => $this->senderId,
+            'senderName' => $this->senderName,
+            'recieverIds' => $this->recieverIds,
+            'recieverNames' => $this->recieverNames,
+            'time' => $this->time,
+            'unread' => $this->unread,
+            'body' => $this->body,
+        ];
     }
 }

@@ -2,14 +2,13 @@
 namespace Erpk\Harvester\Module\Market;
 
 use Erpk\Common\Entity;
-use Erpk\Harvester\Filter;
-use Erpk\Harvester\Exception\ScrapeException;
-use Erpk\Harvester\Exception\InvalidArgumentException;
-use Erpk\Harvester\Client\Selector;
-use Erpk\Harvester\Module\Module;
-use Erpk\Harvester\Client\Response;
 use Erpk\Common\Entity\Country;
 use Erpk\Common\Entity\Industry;
+use Erpk\Harvester\Client\Selector;
+use Erpk\Harvester\Exception\InvalidArgumentException;
+use Erpk\Harvester\Exception\ScrapeException;
+use Erpk\Harvester\Filter;
+use Erpk\Harvester\Module\Module;
 
 class MarketModule extends Module
 {
@@ -65,25 +64,6 @@ class MarketModule extends Module
         }
 
         return $offers;
-    }
-
-    public function scanAsync(Entity\Country $country, Entity\Industry $industry, $quality, $page = 1, callable $callback)
-    {
-        $this->getClient()->checkLogin();
-
-        $request = $this->prepareScanRequest($country, $industry, $quality, $page);
-
-        $curlRequest = $request->createCurlRequest(function (Response $response) use ($callback, $country, $industry, $quality) {
-            $offers = $this->parseOffers($response->getBody(true));
-            foreach ($offers as $offer) {
-                $offer->country  = $country;
-                $offer->industry = $industry;
-                $offer->quality  = $quality;
-            }
-            $callback($offers);
-        });
-
-        return $curlRequest;
     }
     
     protected function parseOffers($html)

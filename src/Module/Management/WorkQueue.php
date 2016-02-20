@@ -3,15 +3,15 @@ namespace Erpk\Harvester\Module\Management;
 
 class WorkQueue
 {
-    protected $queue = array();
+    protected $queue = [];
 
     public function add(Company $company, $ownWork = true, $employeeWorks = 0)
     {
-        $this->queue[] = array(
+        $this->queue[] = [
             'id' => $company->getId(),
             'employee_works' => $employeeWorks,
             'own_work' => $ownWork ? 1 : 0
-        );
+        ];
     }
 
     public function toArray()

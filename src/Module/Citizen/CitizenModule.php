@@ -1,17 +1,18 @@
 <?php
 namespace Erpk\Harvester\Module\Citizen;
 
-use Erpk\Harvester\Module\Module;
-use GuzzleHttp\Exception\ClientException;
-use Erpk\Harvester\Exception\ScrapeException;
-use Erpk\Harvester\Client\Selector as OldSelector;
-use XPathSelector\Exception\NodeNotFoundException;
-use XPathSelector\Selector;
-use Erpk\Harvester\Filter;
-use Erpk\Common\Citizen\Rank;
 use Erpk\Common\Citizen\Helpers;
+use Erpk\Common\Citizen\Rank;
 use Erpk\Common\DateTime;
 use Erpk\Common\EntityManager;
+use Erpk\Harvester\Client\Selector as OldSelector;
+use Erpk\Harvester\Exception\ScrapeException;
+use Erpk\Harvester\Filter;
+use Erpk\Harvester\Module\Module;
+use GuzzleHttp\Exception\ClientException;
+use XPathSelector\Exception\NodeNotFoundException;
+use XPathSelector\Node;
+use XPathSelector\Selector;
 
 class CitizenModule extends Module
 {
@@ -120,7 +121,7 @@ class CitizenModule extends Module
         $result['elite_citizen'] = $content->findOneOrNull('//span[@title="eRepublik Elite Citizen"][1]') !== null;
         $result['national_rank'] = (int)$second->find('small[3]/strong')->extract();
 
-        $military = function($eliteCitizen) use ($content, $parseStat) {
+        $military = function ($eliteCitizen) use ($content, $parseStat) {
             $arr = [];
             $str = $content->find('//div[@class="citizen_military_box"][1]/span[2]')->extract();
             $arr['strength'] = (float)str_ireplace(',', '', trim($str));
@@ -284,6 +285,9 @@ class CitizenModule extends Module
         // Medals
         $medals = $content->findAll('//ul[@id="achievment"]/li');
         foreach ($medals as $li) {
+            /**
+             * @var Node $li
+             */
             $type = $li->findOneOrNull('div[contains(@class,"hinter")]/span/p/strong');
             if ($type == null) {
                 continue;
@@ -322,14 +326,13 @@ class CitizenModule extends Module
             return $result;
         }
 
-        $table = $xs->find('//table[@class="bestof"]');
-        foreach ($table->findAll('tr[position()>1]') as $tr) {
+        $rows = $xs->find('//table[@class="bestof"]')->findAll('tr[position()>1]');
+        return $rows->map(function (Node $tr) {
             $href = $tr->find('td[2]/div[1]/div[2]/a/@href')->extract();
-            $result[] = [
-                'id'   => (int)substr($href, strrpos($href, '/') + 1),
+            return [
+                'id' => (int)substr($href, strrpos($href, '/') + 1),
                 'name' => $tr->find('td[2]/div[1]/div[2]/a')->extract(),
             ];
-        }
-        return $result;
+        });
     }
 }

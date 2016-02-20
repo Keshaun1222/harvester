@@ -37,10 +37,6 @@ class Client
         return $this->internalClient->getConfig('base_uri');
     }
 
-    public function getBaseUrl()
-    {
-    }
-
     /**
      * @return Session
      * @throws Exception\ConfigurationException

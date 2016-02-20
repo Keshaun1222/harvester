@@ -1,15 +1,13 @@
 <?php
 namespace Erpk\Harvester\Module\Exchange;
 
-use cURL;
-use Erpk\Harvester\Client\Response;
-use Erpk\Harvester\Module\Module;
+use Erpk\Harvester\Client\Request;
+use Erpk\Harvester\Client\Selector\Paginator;
 use Erpk\Harvester\Exception\InvalidArgumentException;
 use Erpk\Harvester\Filter;
-use Erpk\Harvester\Client\Selector\Paginator;
-use XPathSelector\Selector;
-use Erpk\Harvester\Client\Request;
+use Erpk\Harvester\Module\Module;
 use XPathSelector\Node;
+use XPathSelector\Selector;
 
 class ExchangeModule extends Module
 {
@@ -62,22 +60,9 @@ class ExchangeModule extends Module
     }
 
     /**
-     * @param int $mode
-     * @param int $page
-     * @param callable $callback
-     * @return cURL\Request
-     * @throws InvalidArgumentException
+     * @param array $data
+     * @return OfferCollection
      */
-    public function scanAsync($mode, $page = 1, callable $callback)
-    {
-        $harvesterRequest = $this->prepareScanRequest($mode, $page);
-
-        $curlRequest = $harvesterRequest->createCurlRequest(function (Response $response) use ($callback) {
-            $callback($this->parseOffers($response->json()));
-        });
-        return $curlRequest;
-    }
-    
     public static function parseOffers($data)
     {
         $xs = Selector::loadHTML($data['buy_mode']);
@@ -104,7 +89,13 @@ class ExchangeModule extends Module
         
         return $result;
     }
-    
+
+    /**
+     * @param int $id
+     * @param float $amount
+     * @return array
+     * @throws InvalidArgumentException
+     */
     public function buy($id, $amount)
     {
         if ($id instanceof Offer) {

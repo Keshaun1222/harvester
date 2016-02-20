@@ -1,13 +1,13 @@
 <?php
 namespace Erpk\Harvester\Module\Management;
 
+use Erpk\Common\Entity;
 use Erpk\Harvester\Client\Response;
 use Erpk\Harvester\Client\Selector;
 use Erpk\Harvester\Exception\InvalidArgumentException;
 use Erpk\Harvester\Exception\ScrapeException;
 use Erpk\Harvester\Filter;
 use Erpk\Harvester\Module\Module;
-use Erpk\Common\Entity;
 use GuzzleHttp\Exception\ClientException;
 use XPathSelector\Node;
 

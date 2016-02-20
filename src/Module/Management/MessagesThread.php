@@ -17,18 +17,18 @@ class MessagesThread
 
     public function toArray()
     {
-        return array(
-                'threadId'  =>  $this->threadId,
-                'lastResponderId'  =>  $this->lastResponderId,
-                'lastResponderName'   =>  $this->lastResponderName,
-                'subject'   =>  $this->subject,
-                'lastResponseBrief'    =>  $this->lastResponseBrief,
-                'totalMessages'    =>  $this->totalMessages,
-                'unreadMessages'    =>  $this->unreadMessages,
-                'lastResponseTime'    =>  $this->lastResponseTime,
-                'unread'    =>  $this->unread,
-                'specialMsg'    =>  $this->specialMsg,
-                'replied'    =>  $this->replied
-        );
+        return [
+            'threadId' => $this->threadId,
+            'lastResponderId' => $this->lastResponderId,
+            'lastResponderName' => $this->lastResponderName,
+            'subject' => $this->subject,
+            'lastResponseBrief' => $this->lastResponseBrief,
+            'totalMessages' => $this->totalMessages,
+            'unreadMessages' => $this->unreadMessages,
+            'lastResponseTime' => $this->lastResponseTime,
+            'unread' => $this->unread,
+            'specialMsg' => $this->specialMsg,
+            'replied' => $this->replied
+        ];
     }
 }

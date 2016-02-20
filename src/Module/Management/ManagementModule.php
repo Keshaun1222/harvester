@@ -2,10 +2,9 @@
 namespace Erpk\Harvester\Module\Management;
 
 use Erpk\Harvester\Exception\ScrapeException;
-use Erpk\Harvester\Exception\NotFoundException;
 use Erpk\Harvester\Client\Selector;
-use Erpk\Harvester\Filter;
 use Erpk\Harvester\Module\Module;
+use XPathSelector\Node;
 
 class ManagementModule extends Module
 {
@@ -18,7 +17,7 @@ class ManagementModule extends Module
         $request->setRelativeReferer();
 
         $query = $request->getQuery();
-        $query->set('format', 'json');;
+        $query->set('format', 'json');
         $query->set('_token', $this->getSession()->getToken());
         $query->set('_', time());
 
@@ -70,7 +69,7 @@ class ManagementModule extends Module
         
         $result = [];
         
-        $parseItem = function ($item) use (&$result) {
+        $parseItem = function (Node $item) use (&$result) {
             $ex = explode('_', str_replace('stock_', '', $item->find('strong/@id')->extract()));
             $result['items'][(int)$ex[0]][(int)$ex[1]] = (int)strtr($item->find('strong')->extract(), [','=>'']);
         };

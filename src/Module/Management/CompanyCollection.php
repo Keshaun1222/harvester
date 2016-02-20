@@ -1,14 +1,14 @@
 <?php
 namespace Erpk\Harvester\Module\Management;
 
+use ArrayIterator;
 use Countable;
 use IteratorAggregate;
-use ArrayIterator;
 
 class CompanyCollection implements Countable, IteratorAggregate
 {
-    protected $original = array();
-    protected $filtered = array();
+    protected $original = [];
+    protected $filtered = [];
 
     public function __construct(array $array)
     {

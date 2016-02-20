@@ -1,8 +1,8 @@
 <?php
 namespace Erpk\Harvester\Module\Login;
 
-use Erpk\Harvester\Module\Module;
 use Erpk\Harvester\Exception\ScrapeException;
+use Erpk\Harvester\Module\Module;
 use XPathSelector\Exception\NodeNotFoundException;
 
 class LoginModule extends Module

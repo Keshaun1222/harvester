@@ -74,7 +74,6 @@ class FeedsModule extends Module
      */
     public function createShout($message, $wallId = self::WALL_FRIENDS, $groupId = 0)
     {
-        $this->getClient()->checkLogin();
         $url = self::getFeedUrl($wallId, self::POST_CREATE);
         $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
@@ -96,7 +95,6 @@ class FeedsModule extends Module
      */
     public function createComment($postId, $message, $wallId = self::WALL_FRIENDS, $groupId = 0)
     {
-        $this->getClient()->checkLogin();
         $url = self::getFeedUrl($wallId, self::COMMENT_CREATE);
         $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
@@ -118,7 +116,6 @@ class FeedsModule extends Module
      */
     public function deleteShout($postId, $wallId = self::WALL_FRIENDS, $groupId = 0)
     {
-        $this->getClient()->checkLogin();
         $url = self::getFeedUrl($wallId, self::POST_DELETE);
         $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
@@ -140,7 +137,6 @@ class FeedsModule extends Module
      */
     public function deleteComment($commentId, $postId, $wallId = self::WALL_FRIENDS, $groupId = 0)
     {
-        $this->getClient()->checkLogin();
         $url = self::getFeedUrl($wallId, self::COMMENT_DELETE);
         $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
@@ -155,7 +151,6 @@ class FeedsModule extends Module
 
     public function getPostsFeed($wallId = self::WALL_FRIENDS, $page = 0, $groupId = 0, $postId = 0)
     {
-        $this->getClient()->checkLogin();
         $url = self::getFeedUrl($wallId, self::POST_RETRIEVE);
         $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
@@ -172,7 +167,6 @@ class FeedsModule extends Module
 
     public function getCommentsFeed($wallId = self::WALL_FRIENDS, $postId = 0, $groupId = 0)
     {
-        $this->getClient()->checkLogin();
         $url = self::getFeedUrl($wallId, self::COMMENT_RETRIEVE);
         $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
@@ -276,8 +270,6 @@ class FeedsModule extends Module
      */
     public function getPostById($postId, $wallId = self::WALL_FRIENDS)
     {
-        $this->getClient()->checkLogin();
-
         $request = $this->getClient()->get();
         switch ($wallId) {
             case self::WALL_FRIENDS:
@@ -326,7 +318,6 @@ class FeedsModule extends Module
             throw new InvalidArgumentException("Military Unit's wall does not support votes.");
         }
 
-        $this->getClient()->checkLogin();
         $url = self::getFeedUrl($wallId, self::POST_VOTE);
         $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
@@ -353,7 +344,6 @@ class FeedsModule extends Module
             throw new InvalidArgumentException("Military Unit's wall does not support votes.");
         }
 
-        $this->getClient()->checkLogin();
         $url = self::getFeedUrl($wallId, self::POST_VOTE);
         $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();

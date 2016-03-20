@@ -17,7 +17,6 @@ class MilitaryModule extends Module
      */
     public function getActiveCampaigns()
     {
-        $this->getClient()->checkLogin();
         $data = $this->getClient()->get('military/campaigns-new')->send()->json();
         return new ActiveCampaigns($data);
     }
@@ -29,7 +28,6 @@ class MilitaryModule extends Module
      */
     public function getCampaignStats($campaignId)
     {
-        $this->getClient()->checkLogin();
         return $this->getClient()->get('military/nbp-stats/' . $campaignId . '/1')->send()->json();
     }
 
@@ -41,8 +39,6 @@ class MilitaryModule extends Module
      */
     public function getUnit($unitId)
     {
-        $this->getClient()->checkLogin();
-
         $xs = $this->getClient()->get('main/group-show/' . $unitId)->send()->xpath();
 
         $content = $xs->find('//div[@id="content"]');
@@ -89,8 +85,6 @@ class MilitaryModule extends Module
      */
     public function getRegiment($unitId, $regimentId)
     {
-        $this->getClient()->checkLogin();
-
         $request = $this->getClient()->get("main/group-list/members/$unitId/$regimentId");
         $request->markXHR();
         $xs = $request->send()->xpath();
@@ -140,8 +134,6 @@ class MilitaryModule extends Module
      */
     public function fight($campaignId, $sideCountryId)
     {
-        $this->getClient()->checkLogin();
-
         $request = $this->getClient()->post('military/fight-shooot/' . $campaignId)->csrf();
         $request->markXHR();
         $request->setRelativeReferer('military/battlefield-new/' . $campaignId);
@@ -159,7 +151,6 @@ class MilitaryModule extends Module
      */
     public function chooseSide($campaignId, $countryId)
     {
-        $this->getClient()->checkLogin();
         $this->getClient()->get("military/battlefield-choose-side/$campaignId/$countryId")->send();
     }
 
@@ -169,8 +160,6 @@ class MilitaryModule extends Module
      */
     public function showWeapons($campaignId)
     {
-        $this->getClient()->checkLogin();
-
         $request = $this->getClient()->get('military/show-weapons');
         $request->markXHR();
         $query = $request->getQuery();
@@ -187,8 +176,6 @@ class MilitaryModule extends Module
      */
     public function changeWeapon($campaignId, $customizationLevel)
     {
-        $this->getClient()->checkLogin();
-
         $request = $this->getClient()->post('military/change-weapon')->csrf();
         $request->markXHR();
         $request->addPostFields([
@@ -205,8 +192,6 @@ class MilitaryModule extends Module
      */
     public function getDailyOrderStatus()
     {
-        $this->getClient()->checkLogin();
-
         $request = $this->getClient()->get();
         $response = $request->send();
         $html = $response->getBody(true);
@@ -226,8 +211,6 @@ class MilitaryModule extends Module
      */
     public function getDailyOrderReward($missionId, $unitId)
     {
-        $this->getClient()->checkLogin();
-
         $request = $this->getClient()->post('military/group-missions')->csrf();
         $request->markXHR();
         $request->setRelativeReferer();

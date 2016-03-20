@@ -163,8 +163,6 @@ class CountryModule extends Module
 
     public function getOnlineCitizens(Country $country, $page = 1)
     {
-        $this->getClient()->checkLogin();
-
         $xs = $this->getClient()->get(
             'main/online-users/' . $country->getEncodedName() . '/all/' . $page
         )->send()->xpath();

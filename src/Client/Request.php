@@ -39,6 +39,11 @@ class Request
     protected $query;
 
     /**
+     * @var bool
+     */
+    protected $autologin = true;
+
+    /**
      * @param ClientInterface $internalClient
      * @param Client $client
      * @param $method
@@ -121,6 +126,11 @@ class Request
         ]);
 
         return $this;
+    }
+
+    public function disableAutologin()
+    {
+        $this->autologin = false;
     }
 
     /**
@@ -206,6 +216,10 @@ class Request
      */
     public function send()
     {
+        if ($this->autologin) {
+            $this->client->checkLogin();
+        }
+
         $this->options['query'] = $this->query->toArray();
         return new Response($this->internalClient->request(
             $this->method,

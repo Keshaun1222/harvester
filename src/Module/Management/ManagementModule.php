@@ -10,7 +10,6 @@ class ManagementModule extends Module
 {
     public function eat()
     {
-        $this->getClient()->checkLogin();
         
         $request = $this->getClient()->get('main/eat');
         $request->markXHR();
@@ -26,7 +25,6 @@ class ManagementModule extends Module
 
     public function getEnergyStatus()
     {
-        $this->getClient()->checkLogin();
         
         $request = $this->getClient()->get();
         $hxs = $request->send()->xpath();
@@ -44,8 +42,6 @@ class ManagementModule extends Module
 
     public function sendMessage($citizenId, $subject, $content)
     {
-        $this->getClient()->checkLogin();
-
         $url = 'main/messages-compose/'.$citizenId;
         $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
@@ -61,7 +57,6 @@ class ManagementModule extends Module
     
     public function getInventory()
     {
-        $this->getClient()->checkLogin();
         $request = $this->getClient()->get('economy/inventory');
         $request->setRelativeReferer('economy/myCompanies');
         $hxs = $request->send()->xpath();
@@ -101,8 +96,6 @@ class ManagementModule extends Module
     
     public function getCompanies()
     {
-        $this->getClient()->checkLogin();
-        
         $request = $this->getClient()->get('economy/myCompanies');
         $response = $request->send();
         $html = $response->getBody(true);
@@ -122,8 +115,6 @@ class ManagementModule extends Module
     
     public function getTrainingGrounds()
     {
-        $this->getClient()->checkLogin();
-        
         $request = $this->getClient()->get('economy/training-grounds');
         $response = $request->send();
         $html = $response->getBody(true);
@@ -134,8 +125,6 @@ class ManagementModule extends Module
     
     public function getAccounts()
     {
-        $this->getClient()->checkLogin();
-        
         $request = $this->getClient()->get('economy/exchange-market/');
         $hxs = $request->send()->xpath();
         
@@ -147,7 +136,6 @@ class ManagementModule extends Module
 
     public function train($q1 = true, $q2 = false, $q3 = false, $q4 = false)
     {
-        $this->getClient()->checkLogin();
         $grounds = $this->getTrainingGrounds();
 
         $toTrain = array();
@@ -172,7 +160,6 @@ class ManagementModule extends Module
 
     protected function work($postFields)
     {
-        $this->getClient()->checkLogin();
         $request = $this->getClient()->post('economy/work')->csrf();
         $request->markXHR();
         $request->setRelativeReferer('economy/myCompanies');
@@ -195,7 +182,6 @@ class ManagementModule extends Module
     
     public function getDailyTasksReward()
     {
-        $this->getClient()->checkLogin();
         $request = $this->getClient()->get('main/daily-tasks-reward');
         $request->markXHR();
         $request->setRelativeReferer();

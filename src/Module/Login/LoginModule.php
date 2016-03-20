@@ -13,6 +13,7 @@ class LoginModule extends Module
         $session = $this->getSession();
 
         $login = $client->post('login');
+        $login->disableAutologin();
         $login->followRedirects();
         $login->setRelativeReferer();
         $login->addPostFields([

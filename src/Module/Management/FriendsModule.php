@@ -18,7 +18,6 @@ class FriendsModule extends Module
 
     public function startMessageThread($citizenIds, $subject, $content)
     {
-        $this->getClient()->checkLogin();
         if (is_array($citizenIds)) {
             $citizens = implode(',', $citizenIds);
             $citizenId = 0;
@@ -44,7 +43,6 @@ class FriendsModule extends Module
     public function respondMessage($threadId, $messagebody)
     {
         $threadId = Filter::id($threadId);
-        $this->getClient()->checkLogin();
 
         $url = 'main/messages-compose/0';
         $request = $this->getClient()->post($url)->csrf();
@@ -62,7 +60,6 @@ class FriendsModule extends Module
     public function deleteMessage($threadId)
     {
         $threadId = Filter::id($threadId);
-        $this->getClient()->checkLogin();
 
         $request = $this->getClient()->post('main/messages-delete')->csrf();
         $request->markXHR();
@@ -78,7 +75,6 @@ class FriendsModule extends Module
     protected function retrieveMessageHtml($threadId)
     {
         $threadId = Filter::id($threadId);
-        $this->getClient()->checkLogin();
 
         $request = $this->getClient()->get('main/messages-read/'.$threadId);
         $request->markXHR();
@@ -163,7 +159,6 @@ class FriendsModule extends Module
     protected function retrieveMessageThreadsHtml()
     {
         //fluid_blue_light_medium message_get
-        $this->getClient()->checkLogin();
 
         $pages = array();
 
@@ -248,7 +243,6 @@ class FriendsModule extends Module
     protected function updateFriend($citizenId, $status = 'add')
     {
         $citizenId = Filter::id($citizenId);
-        $this->getClient()->checkLogin();
         $request = $this->getClient()->get('citizen/profile/'.$citizenId);
         $response = $request->send();
         $html = $response->getBody(true);
@@ -293,7 +287,6 @@ class FriendsModule extends Module
     public function isFriend($citizenId)
     {
         $citizenId = Filter::id($citizenId);
-        $this->getClient()->checkLogin();
         $hxs = $this->getClient()->get('citizen/profile/'.$citizenId)->send()->xpath();
         return $hxs->findOneOrNull('//a[@class="action_friend_remove tip"]') !== null;
     }
@@ -308,7 +301,6 @@ class FriendsModule extends Module
     public function listFriendsbyPage($citizenId, $page)
     {
         $citizenId = Filter::id($citizenId);
-        $this->getClient()->checkLogin();
 
         try {
             $response = $this->getClient()->get("main/citizen-friends/$citizenId/$page/list")->send();
@@ -408,7 +400,6 @@ class FriendsModule extends Module
     protected function donate($citizenId, $action, $amount, array $postFields)
     {
         $citizenId = Filter::id($citizenId);
-        $this->getClient()->checkLogin();
 
         $postFields = array_merge([
             'citizen_id' => $citizenId,

@@ -31,8 +31,6 @@ class MarketModule extends Module
      */
     public function scan($countryId, $industryId, $quality, $page = 1, $orderBy = 'price_asc')
     {
-        $this->getClient()->checkLogin();
-
         return $this->createRequest([
             'countryId' => $countryId,
             'industryId' => $industryId,
@@ -52,8 +50,6 @@ class MarketModule extends Module
      */
     public function buy($offerId, $amount, $page = 1, $orderBy = 'price_asc')
     {
-        $this->getClient()->checkLogin();
-
         return $this->createRequest([
             'offerId' => $offerId,
             'amount' => $amount,

@@ -119,8 +119,6 @@ class Leaderboard extends Module
 
     public function citizensDamage($asarray = true)
     {
-        $this->getClient()->checkLogin();
-
         $params = $this->getCountry()->getId().'/'.$this->week.'/'.$this->militaryunitId.'/'.$this->division;
         $request = $this->getClient()->get('main/leaderboards-'.self::CITIZEN_DAMAGE.'-rankings/'.$params);
         $response = $request->send();
@@ -133,8 +131,6 @@ class Leaderboard extends Module
 
     public function citizensKills($asarray = true)
     {
-        $this->getClient()->checkLogin();
-
         $params = $this->getCountry()->getId().'/'.$this->week.'/'.$this->militaryunitId.'/'.$this->division;
         $request = $this->getClient()->get('main/leaderboards-'.self::CITIZEN_KILLS.'-rankings/'.$params);
         $response = $request->send();
@@ -147,8 +143,6 @@ class Leaderboard extends Module
 
     public function muDamage($asarray = true)
     {
-        $this->getClient()->checkLogin();
-
         $params = $this->getCountry()->getId().'/'.$this->week.'/0/0';
         $request = $this->getClient()->get('main/leaderboards-'.self::MU_DAMAGE.'-rankings/'.$params);
         $response = $request->send();
@@ -161,8 +155,6 @@ class Leaderboard extends Module
 
     public function muKills($asarray = true)
     {
-        $this->getClient()->checkLogin();
-
         $params = $this->getCountry()->getId().'/'.$this->week.'/0/0';
         $request = $this->getClient()->get('main/leaderboards-'.self::MU_KILLS.'-rankings/'.$params);
         $response = $request->send();
@@ -175,8 +167,6 @@ class Leaderboard extends Module
 
     public function countryDamage($asarray = true)
     {
-        $this->getClient()->checkLogin();
-
         $params = $this->week;
         $request = $this->getClient()->get('main/leaderboards-'.self::COUNTRY_DAMAGE.'-rankings/'.$params);
         $response = $request->send();
@@ -189,8 +179,6 @@ class Leaderboard extends Module
 
     public function countryKills($asarray = true)
     {
-        $this->getClient()->checkLogin();
-
         $params = $this->week;
         $request = $this->getClient()->get('main/leaderboards-'.self::COUNTRY_KILLS.'-rankings/'.$params);
         $response = $request->send();

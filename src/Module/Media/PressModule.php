@@ -16,8 +16,6 @@ class PressModule extends Module
 {
     public function publishArticle($articleName, $articleBody, Country $articleLocation, $articleCategory)
     {
-        $this->getClient()->checkLogin();
-
         $request = $this->getClient()->post('main/write-article')->csrf();
         $request->setRelativeReferer('main/write-article');
         $request->addPostFields([
@@ -37,7 +35,6 @@ class PressModule extends Module
     
     public function editArticle(Article $article, $articleName, $articleBody, $articleCategory)
     {
-        $this->getClient()->checkLogin();
         $request = $this->getClient()->post('main/edit-article/'.$article->getId())->csrf();
         $request->setRelativeReferer('main/edit-article/'.$article->getId());
         $request->addPostFields([
@@ -52,7 +49,6 @@ class PressModule extends Module
 
     public function deleteArticle(Article $article)
     {
-        $this->getClient()->checkLogin();
         $request = $this->getClient()->get('main/delete-article/'.$article->getId().'/1');
         $request->send();
     }
@@ -182,7 +178,6 @@ class PressModule extends Module
 
     public function getArticle($id)
     {
-        $this->getClient()->checkLogin();
         $url = $this->getClient()->get("article/$id/1/20")->send()->getLocation();
 
         if (stripos($url, 'article') === false) {
@@ -268,7 +263,6 @@ class PressModule extends Module
     public function getNewspaper($id, $pageLimit = null)
     {
         $id = Filter::id($id);
-        $this->getClient()->checkLogin();
 
         $response = $this->getClient()->get('newspaper/'.$id)->send();
         if (!$response->isRedirect()) {

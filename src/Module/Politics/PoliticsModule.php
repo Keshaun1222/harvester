@@ -13,7 +13,6 @@ class PoliticsModule extends Module
     public function getParty($id)
     {
         $id = Filter::id($id);
-        $this->getClient()->checkLogin();
 
         $response = $this->getClient()->get('party/'.$id)->send();
 

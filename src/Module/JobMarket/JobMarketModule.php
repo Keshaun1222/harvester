@@ -12,7 +12,6 @@ class JobMarketModule extends Module
     public function scan(Entity\Country $country, $page = 1)
     {
         $page = Filter::page($page);
-        $this->getClient()->checkLogin();
 
         $request  = $this->getClient()->get('economy/job-market/'.$country->getId().'/'.$page);
         $response = $request->send();

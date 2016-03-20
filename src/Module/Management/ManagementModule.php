@@ -11,8 +11,7 @@ class ManagementModule extends Module
     public function eat()
     {
         
-        $request = $this->getClient()->get('main/eat');
-        $request->markXHR();
+        $request = $this->getClient()->get('main/eat')->xhr();
         $request->setRelativeReferer();
 
         $query = $request->getQuery();
@@ -43,8 +42,7 @@ class ManagementModule extends Module
     public function sendMessage($citizenId, $subject, $content)
     {
         $url = 'main/messages-compose/'.$citizenId;
-        $request = $this->getClient()->post($url)->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post($url)->csrf()->xhr();
         $request->setRelativeReferer($url);
         $request->addPostFields([
             'citizen_name'    => $citizenId,
@@ -148,8 +146,7 @@ class ManagementModule extends Module
             }
         }
 
-        $request = $this->getClient()->post('economy/train')->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post('economy/train')->csrf()->xhr();
         $request->setRelativeReferer('economy/training-grounds');
         $request->addPostFields([
             'grounds' => $toTrain
@@ -160,8 +157,7 @@ class ManagementModule extends Module
 
     protected function work($postFields)
     {
-        $request = $this->getClient()->post('economy/work')->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post('economy/work')->csrf()->xhr();
         $request->setRelativeReferer('economy/myCompanies');
         $request->addPostFields($postFields);
         return $request->send()->json();
@@ -182,8 +178,7 @@ class ManagementModule extends Module
     
     public function getDailyTasksReward()
     {
-        $request = $this->getClient()->get('main/daily-tasks-reward');
-        $request->markXHR();
+        $request = $this->getClient()->get('main/daily-tasks-reward')->xhr();
         $request->setRelativeReferer();
         return $request->send()->json();
     }

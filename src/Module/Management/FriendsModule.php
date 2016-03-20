@@ -27,8 +27,7 @@ class FriendsModule extends Module
         }
 
         $url = 'main/messages-compose/'.$citizenId;
-        $request = $this->getClient()->post($url)->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post($url)->csrf()->xhr();
         $request->setRelativeReferer($url);
         $request->addPostFields([
             'citizen_name'    => $citizens,
@@ -45,8 +44,7 @@ class FriendsModule extends Module
         $threadId = Filter::id($threadId);
 
         $url = 'main/messages-compose/0';
-        $request = $this->getClient()->post($url)->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post($url)->csrf()->xhr();
         $request->setRelativeReferer($url);
         $request->addPostFields([
             'thread_id'       => $threadId,
@@ -61,8 +59,7 @@ class FriendsModule extends Module
     {
         $threadId = Filter::id($threadId);
 
-        $request = $this->getClient()->post('main/messages-delete')->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post('main/messages-delete')->csrf()->xhr();
         $request->setRelativeReferer('main/messages-inbox');
         $request->addPostFields([
             'delete_message[]' => $threadId,
@@ -76,8 +73,7 @@ class FriendsModule extends Module
     {
         $threadId = Filter::id($threadId);
 
-        $request = $this->getClient()->get('main/messages-read/'.$threadId);
-        $request->markXHR();
+        $request = $this->getClient()->get('main/messages-read/'.$threadId)->xhr();
         $request->setRelativeReferer('main/messages-inbox');
 
         $response = $request->send();
@@ -164,8 +160,7 @@ class FriendsModule extends Module
 
         $i = 1;
         do {
-            $request = $this->getClient()->get('main/messages-paginated/'.$i);
-            $request->markXHR();
+            $request = $this->getClient()->get('main/messages-paginated/'.$i)->xhr();
             $request->setRelativeReferer('main/messages-inbox');
 
             $response = $request->send();

@@ -70,7 +70,16 @@ class Request
 
     public function markXHR()
     {
+        return $this->xhr();
+    }
+
+    /**
+     * @return Request|$this
+     */
+    public function xhr()
+    {
         $this->setHeader('X-Requested-With', 'XMLHttpRequest');
+        return $this;
     }
 
     /**

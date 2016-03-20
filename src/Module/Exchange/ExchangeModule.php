@@ -16,8 +16,7 @@ class ExchangeModule extends Module
      */
     private function createRequest($action, array $post)
     {
-        $request = $this->getClient()->post("economy/exchange/$action/")->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post("economy/exchange/$action/")->csrf()->xhr();
         $request->setRelativeReferer('economy/exchange-market/');
         $request->addPostFields($post);
         return $request;

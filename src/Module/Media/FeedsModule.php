@@ -75,8 +75,7 @@ class FeedsModule extends Module
     public function createShout($message, $wallId = self::WALL_FRIENDS, $groupId = 0)
     {
         $url = self::getFeedUrl($wallId, self::POST_CREATE);
-        $request = $this->getClient()->post($url)->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post($url)->csrf()->xhr();
         $request->setRelativeReferer();
         $request->addPostFields([
             'post_message' => $message,
@@ -96,8 +95,7 @@ class FeedsModule extends Module
     public function createComment($postId, $message, $wallId = self::WALL_FRIENDS, $groupId = 0)
     {
         $url = self::getFeedUrl($wallId, self::COMMENT_CREATE);
-        $request = $this->getClient()->post($url)->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post($url)->csrf()->xhr();
         $request->setRelativeReferer();
         $request->addPostFields([
             'comment_message' => $message,
@@ -117,8 +115,7 @@ class FeedsModule extends Module
     public function deleteShout($postId, $wallId = self::WALL_FRIENDS, $groupId = 0)
     {
         $url = self::getFeedUrl($wallId, self::POST_DELETE);
-        $request = $this->getClient()->post($url)->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post($url)->csrf()->xhr();
         $request->setRelativeReferer();
         $request->addPostFields([
             'postId' => $postId,
@@ -138,8 +135,7 @@ class FeedsModule extends Module
     public function deleteComment($commentId, $postId, $wallId = self::WALL_FRIENDS, $groupId = 0)
     {
         $url = self::getFeedUrl($wallId, self::COMMENT_DELETE);
-        $request = $this->getClient()->post($url)->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post($url)->csrf()->xhr();
         $request->setRelativeReferer();
         $request->addPostFields([
             'commentId' => $commentId,
@@ -152,8 +148,7 @@ class FeedsModule extends Module
     public function getPostsFeed($wallId = self::WALL_FRIENDS, $page = 0, $groupId = 0, $postId = 0)
     {
         $url = self::getFeedUrl($wallId, self::POST_RETRIEVE);
-        $request = $this->getClient()->post($url)->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post($url)->csrf()->xhr();
         $request->setRelativeReferer();
         $request->addPostFields([
             'groupId' => $groupId,
@@ -168,8 +163,7 @@ class FeedsModule extends Module
     public function getCommentsFeed($wallId = self::WALL_FRIENDS, $postId = 0, $groupId = 0)
     {
         $url = self::getFeedUrl($wallId, self::COMMENT_RETRIEVE);
-        $request = $this->getClient()->post($url)->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post($url)->csrf()->xhr();
         $request->setRelativeReferer();
         $request->addPostFields([
             'postId' => $postId,
@@ -319,8 +313,7 @@ class FeedsModule extends Module
         }
 
         $url = self::getFeedUrl($wallId, self::POST_VOTE);
-        $request = $this->getClient()->post($url)->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post($url)->csrf()->xhr();
         $request->setRelativeReferer();
         $request->addPostFields([
             'postId' => $postId,
@@ -345,8 +338,7 @@ class FeedsModule extends Module
         }
 
         $url = self::getFeedUrl($wallId, self::POST_VOTE);
-        $request = $this->getClient()->post($url)->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post($url)->csrf()->xhr();
         $request->setRelativeReferer();
         $request->addPostFields([
             'postId' => $postId,

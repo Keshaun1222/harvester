@@ -85,8 +85,7 @@ class MilitaryModule extends Module
      */
     public function getRegiment($unitId, $regimentId)
     {
-        $request = $this->getClient()->get("main/group-list/members/$unitId/$regimentId");
-        $request->markXHR();
+        $request = $this->getClient()->get("main/group-list/members/$unitId/$regimentId")->xhr();
         $xs = $request->send()->xpath();
 
         $countries = $this->getEntityManager()->getRepository(Country::class);
@@ -134,8 +133,7 @@ class MilitaryModule extends Module
      */
     public function fight($campaignId, $sideCountryId)
     {
-        $request = $this->getClient()->post('military/fight-shooot/' . $campaignId)->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post('military/fight-shooot/' . $campaignId)->csrf()->xhr();
         $request->setRelativeReferer('military/battlefield-new/' . $campaignId);
         $request->addPostFields([
             'battleId' => $campaignId,
@@ -160,8 +158,7 @@ class MilitaryModule extends Module
      */
     public function showWeapons($campaignId)
     {
-        $request = $this->getClient()->get('military/show-weapons');
-        $request->markXHR();
+        $request = $this->getClient()->get('military/show-weapons')->xhr();
         $query = $request->getQuery();
         $query->add('_token', $this->getSession()->getToken());
         $query->add('battleId', $campaignId);
@@ -176,8 +173,7 @@ class MilitaryModule extends Module
      */
     public function changeWeapon($campaignId, $customizationLevel)
     {
-        $request = $this->getClient()->post('military/change-weapon')->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post('military/change-weapon')->csrf()->xhr();
         $request->addPostFields([
             'battleId' => $campaignId,
             'customizationLevel' => $customizationLevel
@@ -211,8 +207,7 @@ class MilitaryModule extends Module
      */
     public function getDailyOrderReward($missionId, $unitId)
     {
-        $request = $this->getClient()->post('military/group-missions')->csrf();
-        $request->markXHR();
+        $request = $this->getClient()->post('military/group-missions')->csrf()->xhr();
         $request->setRelativeReferer();
         $request->addPostFields([
             'groupId' => $unitId,

@@ -160,21 +160,16 @@ $offers = $module->scan($poland, 1);
 ###Market
 ```php
 use Erpk\Harvester\Module\Market\MarketModule;
+
+$countryId = 35; // Poland
+$industryId = 2; // Weapons
+$quality = 7; // Q7
+
 $module = new MarketModule($client);
+$result = $module->scan($countryId, $industryId, $quality);
 
-// Q7 weapons offers in Poland, page 1
-use Erpk\Common\EntityManager;
-$em = EntityManager::getInstance();
-$countries = $em->getRepository('Erpk\Common\Entity\Country');
-$industries = $em->getRepository('Erpk\Common\Entity\Industry');
-
-$poland = $countries->findOneByCode('PL');
-$weapons = $industries->findOneByCode('weapons');
-
-$offers = $module->scan($poland, $weapons, 7, 1);
-
-// And now buy some weapons
-$response = $module->buy($offers[0], 15);
+// Buy 15 weapons of Q7 quality.
+$response = $module->buy($result['offers'][0]['id'], 15);
 ```
 
 ###Country

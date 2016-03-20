@@ -2,8 +2,8 @@
 namespace Erpk\Harvester\Client;
 
 use cURL;
-use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Psr7\Uri;
 
 class Request
@@ -101,10 +101,26 @@ class Request
      */
     public function addPostFields(array $fields)
     {
-        $this->options['form_params'] = [];
-        foreach ($fields as $key => $value) {
-            $this->options['form_params'][$key] = $value;
+        $form = &$this->options['form_params'];
+        if (!isset($form)) {
+            $form = [];
         }
+
+        foreach ($fields as $key => $value) {
+            $form[$key] = $value;
+        }
+    }
+
+    /**
+     * @return Request $this
+     */
+    public function csrf()
+    {
+        $this->addPostFields([
+            '_token' => $this->client->getSession()->getToken()
+        ]);
+
+        return $this;
     }
 
     /**

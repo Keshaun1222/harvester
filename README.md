@@ -125,14 +125,14 @@ if ($doStatus['do_reward_on'] == true) {
 use Erpk\Harvester\Module\Exchange\ExchangeModule;
 $module = new ExchangeModule($client);
 
-// Offers for buy currency, page 1
-$offers = $module->scan(ExchangeModule::CURRENCY, 1);
-// Offers for buy gold, page 20
-$offers = $module->scan(ExchangeModule::GOLD, 20);
+// Purchase currenc, sell gold, page 1
+$response = $module->scan(ExchangeModule::CURRENCY, 1);
+// Purchase gold, sell currency, page 20
+$response = $module->scan(ExchangeModule::GOLD, 20);
 
-// Access current gold and currency amounts
-$gold = $offers->getGoldAmount();
-$cc = $offers->getCurrencyAmount();
+// Access citizen gold and currency amounts
+$gold = $response->getGoldAmount();
+$cc = $response->getCurrencyAmount();
 
 // Get paginator
 $paginator = $offers->getPaginator();
@@ -140,7 +140,9 @@ echo $paginator->getCurrentPage(); // Display current page number
 echo $paginator->getLastPage(); // Display last page number
 
 // Buy offer
-$response = $module->buy($offerId, $amountToBuy);
+$offer = $response->getOffers()[0];
+$amountToBuy = 0.05;
+$response = $module->buy($offer, $amountToBuy);
 ```
 
 ###JobMarket

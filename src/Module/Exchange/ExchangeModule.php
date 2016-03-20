@@ -2,120 +2,62 @@
 namespace Erpk\Harvester\Module\Exchange;
 
 use Erpk\Harvester\Client\Request;
-use Erpk\Harvester\Client\Selector\Paginator;
-use Erpk\Harvester\Exception\InvalidArgumentException;
-use Erpk\Harvester\Filter;
 use Erpk\Harvester\Module\Module;
-use XPathSelector\Node;
-use XPathSelector\Selector;
 
 class ExchangeModule extends Module
 {
-    const CURRENCY = 0;
-    const GOLD     = 1;
+    const CURRENCY = 1;
+    const GOLD = 62;
 
     /**
-     * @param int $mode
-     * @param int $page
+     * @param string $action
+     * @param array $post
      * @return Request
-     * @throws InvalidArgumentException
      */
-    protected function prepareScanRequest($mode, $page = 1)
+    private function createRequest($action, array $post)
     {
-        switch ($mode) {
-            case self::CURRENCY:
-                $currencyId = 1;
-                break;
-            case self::GOLD:
-                $currencyId = 62;
-                break;
-            default:
-                throw new InvalidArgumentException('Invalid currency');
-        }
-
-        $page = Filter::page($page);
         $this->getClient()->checkLogin();
-        $request = $this->getClient()->post('economy/exchange/retrieve/');
-        $request->addPostFields([
-            '_token'         => $this->getSession()->getToken(),
-            'currencyId'     => $currencyId,
-            'page'           => $page-1,
-            'personalOffers' => 0,
-        ]);
 
+        $request = $this->getClient()->post("economy/exchange/$action/")->csrf();
+        $request->markXHR();
+        $request->setRelativeReferer('economy/exchange-market/');
+        $request->addPostFields($post);
         return $request;
     }
 
     /**
-     * @param int $mode
+     * @param int $currencyId
      * @param int $page
-     * @return OfferCollection
-     * @throws InvalidArgumentException
+     * @return ExchangeResponse
      */
-    public function scan($mode, $page = 1)
+    public function scan($currencyId, $page = 1)
     {
-        $request = $this->prepareScanRequest($mode, $page);
-        $response = $request->send();
-        return $this->parseOffers($response->json());
+        $data = $this->createRequest('retrieve', [
+            'currencyId' => $currencyId,
+            'page' => $page - 1,
+            'personalOffers' => 0,
+        ])->send()->json();
+
+        return new ExchangeResponse($data);
     }
 
     /**
-     * @param array $data
-     * @return OfferCollection
-     */
-    public static function parseOffers($data)
-    {
-        $xs = Selector::loadHTML($data['buy_mode']);
-
-        $result = new OfferCollection();
-        $result->setPaginator(new Paginator($xs));
-        $result->setGoldAmount((float)$data['gold']['value']);
-        $result->setCurrencyAmount((float)$data['ecash']['value']);
-        
-        $rows = $xs->findAll('//*[@class="exchange_offers"]/tr');
-        foreach ($rows as $row) {
-            /**
-             * @var Node $row
-             */
-            $url = $row->find('td[1]/a/@href')->extract();
-            $offer = new Offer();
-            $offer->id         = (int)substr($row->find('td[3]/strong[2]/@id')->extract(), 14);
-            $offer->amount     = (float)str_replace(',', '', $row->find('td[2]/strong/span')->extract());
-            $offer->rate       = (float)$row->find('td[3]/strong[2]/span')->extract();
-            $offer->sellerId   = (int)substr($url, strripos($url, '/') + 1);
-            $offer->sellerName = (string)$row->find('td[1]/a/@title')->extract();
-            $result[] = $offer;
-        }
-        
-        return $result;
-    }
-
-    /**
-     * @param int $id
+     * @param int|Offer $offerId
      * @param float $amount
-     * @return array
-     * @throws InvalidArgumentException
+     * @return ExchangeResponse
      */
-    public function buy($id, $amount)
+    public function buy($offerId, $amount)
     {
-        if ($id instanceof Offer) {
-            $id = $id->id;
+        if ($offerId instanceof Offer) {
+            $offerId = $offerId->id;
         }
-        $id = Filter::id($id);
-        $amount = filter_var($amount, FILTER_VALIDATE_FLOAT);
-        if (!$amount) {
-            throw new InvalidArgumentException('Specified amount is not a valid number.');
-        }
-        
-        $this->getClient()->checkLogin();
-        $request = $this->getClient()->post('economy/exchange/purchase/');
-        $request->setRelativeReferer('economy/exchange-market/');
-        $request->addPostFields([
-            'offerId' => $id,
-            'amount'  => $amount,
-            '_token'  => $this->getSession()->getToken(),
-            'page'    => 0
-        ]);
-        return $request->send()->json();
+
+        $data = $this->createRequest('purchase', [
+            'offerId' => $offerId,
+            'amount' => $amount,
+            'page' => 0,
+        ])->send()->json();
+
+        return new ExchangeResponse($data);
     }
 }

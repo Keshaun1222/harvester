@@ -5,15 +5,12 @@ use Erpk\Common\Entity\Country;
 use Erpk\Harvester\Client\Selector;
 use Erpk\Harvester\Exception\NotFoundException;
 use Erpk\Harvester\Exception\ScrapeException;
-use Erpk\Harvester\Filter;
 use Erpk\Harvester\Module\Module;
 
 class PoliticsModule extends Module
 {
     public function getParty($id)
     {
-        $id = Filter::id($id);
-
         $response = $this->getClient()->get('party/'.$id)->send();
 
         if ($response->isRedirect()) {

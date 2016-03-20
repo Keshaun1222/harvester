@@ -2,7 +2,6 @@
 namespace Erpk\Harvester\Module\JobMarket;
 
 use Erpk\Common\Entity;
-use Erpk\Harvester\Filter;
 use Erpk\Harvester\Module\Module;
 use XPathSelector\Node;
 use XPathSelector\Selector;
@@ -11,8 +10,6 @@ class JobMarketModule extends Module
 {
     public function scan(Entity\Country $country, $page = 1)
     {
-        $page = Filter::page($page);
-
         $request  = $this->getClient()->get('economy/job-market/'.$country->getId().'/'.$page);
         $response = $request->send();
         

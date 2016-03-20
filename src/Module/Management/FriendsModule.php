@@ -6,7 +6,6 @@ use Erpk\Harvester\Client\Response;
 use Erpk\Harvester\Client\Selector;
 use Erpk\Harvester\Exception\InvalidArgumentException;
 use Erpk\Harvester\Exception\ScrapeException;
-use Erpk\Harvester\Filter;
 use Erpk\Harvester\Module\Module;
 use GuzzleHttp\Exception\ClientException;
 use XPathSelector\Node;
@@ -41,8 +40,6 @@ class FriendsModule extends Module
 
     public function respondMessage($threadId, $messagebody)
     {
-        $threadId = Filter::id($threadId);
-
         $url = 'main/messages-compose/0';
         $request = $this->getClient()->post($url)->csrf()->xhr();
         $request->setRelativeReferer($url);
@@ -57,8 +54,6 @@ class FriendsModule extends Module
 
     public function deleteMessage($threadId)
     {
-        $threadId = Filter::id($threadId);
-
         $request = $this->getClient()->post('main/messages-delete')->csrf()->xhr();
         $request->setRelativeReferer('main/messages-inbox');
         $request->addPostFields([
@@ -71,8 +66,6 @@ class FriendsModule extends Module
 
     protected function retrieveMessageHtml($threadId)
     {
-        $threadId = Filter::id($threadId);
-
         $request = $this->getClient()->get('main/messages-read/'.$threadId)->xhr();
         $request->setRelativeReferer('main/messages-inbox');
 
@@ -237,7 +230,6 @@ class FriendsModule extends Module
 
     protected function updateFriend($citizenId, $status = 'add')
     {
-        $citizenId = Filter::id($citizenId);
         $request = $this->getClient()->get('citizen/profile/'.$citizenId);
         $response = $request->send();
         $html = $response->getBody(true);
@@ -281,7 +273,6 @@ class FriendsModule extends Module
      */
     public function isFriend($citizenId)
     {
-        $citizenId = Filter::id($citizenId);
         $hxs = $this->getClient()->get('citizen/profile/'.$citizenId)->send()->xpath();
         return $hxs->findOneOrNull('//a[@class="action_friend_remove tip"]') !== null;
     }
@@ -295,8 +286,6 @@ class FriendsModule extends Module
      */
     public function listFriendsbyPage($citizenId, $page)
     {
-        $citizenId = Filter::id($citizenId);
-
         try {
             $response = $this->getClient()->get("main/citizen-friends/$citizenId/$page/list")->send();
         } catch (ClientException $ex) {
@@ -394,8 +383,6 @@ class FriendsModule extends Module
      */
     protected function donate($citizenId, $action, $amount, array $postFields)
     {
-        $citizenId = Filter::id($citizenId);
-
         $postFields = array_merge([
             'citizen_id' => $citizenId,
             'amount' => $amount,

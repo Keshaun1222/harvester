@@ -9,7 +9,6 @@ use Erpk\Common\Entity\Region;
 use Erpk\Common\EntityManager;
 use Erpk\Harvester\Client\Selector as OldSelector;
 use Erpk\Harvester\Exception\ScrapeException;
-use Erpk\Harvester\Filter;
 use Erpk\Harvester\Module\Module;
 use GuzzleHttp\Exception\ClientException;
 use XPathSelector\Exception\NodeNotFoundException;
@@ -25,8 +24,6 @@ class CitizenModule extends Module
      */
     public function getProfile($id)
     {
-        $id = Filter::id($id);
-
         $request = $this->getClient()->get('citizen/profile/'.$id);
         $request->disableCookies();
 
@@ -312,7 +309,6 @@ class CitizenModule extends Module
      */
     public function search($searchQuery, $page = 1)
     {
-        $page = Filter::page($page);
         $request = $this->getClient()->get('main/search/');
         $request->disableCookies();
 

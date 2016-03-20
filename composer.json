@@ -12,7 +12,8 @@
         "stil/xpath-selector": "~2.0.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "5.0.*"
+        "phpunit/phpunit": "5.0.*",
+        "vlucas/phpdotenv": "^2.2"
     },
     "autoload": {
         "psr-4": {

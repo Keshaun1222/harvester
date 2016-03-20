@@ -1,36 +1,30 @@
 <?php
 namespace Erpk\Harvester\Module\Country;
 
-use Erpk\Common\Entity;
+use Erpk\Common\Entity\Country;
+use Erpk\Common\Entity\Industry;
+use Erpk\Common\Entity\Region;
 use Erpk\Harvester\Client\Selector\Filter;
 use Erpk\Harvester\Exception\ScrapeException;
 use Erpk\Harvester\Module\Module;
 use XPathSelector\Node;
 use XPathSelector\NodeList;
-use XPathSelector\Selector;
 
 class CountryModule extends Module
 {
-    protected function get(Entity\Country $country, $type)
+    protected function get(Country $country, $type)
     {
         $name = $country->getEncodedName();
-        $request = $this->getClient()->get('country/'.$type.'/'.$name);
+        $request = $this->getClient()->get("country/$type/$name");
         $request->disableCookies();
-        $response = $request->send();
-        if ($response->isRedirect()) {
-            throw new ScrapeException();
-        }
-
-        return $response->getBody();
+        return $request->send()->xpath();
     }
-    
-    public function getSociety(Entity\Country $country)
+
+    public function getSociety(Country $country)
     {
-        $html = $this->get($country, 'society');
+        $xs = $this->get($country, 'society');
         $result = $country->toArray();
 
-        $xs = Selector::loadHTML($html);
-        
         $table = $xs->findAll('//table[@class="citizens largepadded"]/tr[position()>1]');
         foreach ($table as $tr) {
             /**
@@ -45,35 +39,27 @@ class CountryModule extends Module
             $result[$key] = (int)str_replace(',', '', $value);
         }
 
-        if (preg_match('#Regions \(([0-9]+)\)#', $html, $regions)) {
+        if (preg_match('#Regions \(([0-9]+)\)#', $xs->outerHTML(), $regions)) {
             $result['region_count'] = (int)$regions[1];
         }
-        
-        $regions = $this->getEntityManager()->getRepository('Erpk\Common\Entity\Region');
-        $result['regions'] = [];
-        $table = $xs->findAll('//table[@class="regions"]/tr[position()>1]');
-        foreach ($table as $tr) {
-            /**
-             * @var Node $tr
-             */
-            $region = $regions->findOneByName(trim($tr->find('td[1]//a[1]')->extract()));
-            if (!$region) {
-                throw new ScrapeException();
+
+        $regions = $this->getEntityManager()->getRepository(Region::class);
+        $result['regions'] = $xs->findAll('//table[@class="regions"]/tr[position()>1]')->map(
+            function (Node $tr) use ($regions) {
+                $regionName = trim($tr->find('td[1]//a[1]')->extract());
+                return $regions->findOneByName($regionName);
             }
-            $result['regions'][] = $region;
-        }
-        
+        );
+
         return $result;
     }
-    
-    public function getEconomy(Entity\Country $country)
-    {
-        $html = $this->get($country, 'economy');
-        $result = $country->toArray();
-        
-        $xs = Selector::loadHTML($html);
-        $economy = $xs->find('//div[@id="economy"]');
 
+    public function getEconomy(Country $country)
+    {
+        $xs = $this->get($country, 'economy');
+        $result = $country->toArray();
+
+        $economy = $xs->find('//div[@id="economy"]');
 
         /* TREASURY */
         $treasury = $economy->findAll('//table[@class="donation_status_table"]/tr');
@@ -114,9 +100,9 @@ class CountryModule extends Module
                 $result['bonuses']['house'] += $bonusDecimal;
             }
         }
-        
+
         /* TAXES */
-        $industries = $this->getEntityManager()->getRepository('Erpk\Common\Entity\Industry');
+        $industries = $this->getEntityManager()->getRepository(Industry::class);
         $taxes = $economy->findAll('h2[text()="Taxes" and @class="section"]/following-sibling::div[1]/table/tr[position()>1]');
         foreach ($taxes as $k => $tr) {
             $i = $tr->findAll('td/span');
@@ -126,19 +112,19 @@ class CountryModule extends Module
             if (count($i) != 4) {
                 throw new ScrapeException();
             }
-            $vat = (float)rtrim($i->item(3)->extract(), '%')/100;
+            $vat = (float)rtrim($i->item(3)->extract(), '%') / 100;
             if (!preg_match('@industry/(\d+)/@', $tr->find('td[1]/img[1]/@src')->extract(), $industryId)) {
                 throw new ScrapeException();
             }
 
             $industry = $industries->find((int)$industryId[1])->getCode();
             $result['taxes'][$industry] = [
-                'income' => (float)rtrim($i->item(1)->extract(), '%')/100,
-                'import' => (float)rtrim($i->item(2)->extract(), '%')/100,
-                'vat'    => empty($vat) ? null : $vat,
+                'income' => (float)rtrim($i->item(1)->extract(), '%') / 100,
+                'import' => (float)rtrim($i->item(2)->extract(), '%') / 100,
+                'vat' => empty($vat) ? null : $vat,
             ];
         }
-        
+
         /* SALARY */
         $salary = $economy->findAll(
             'h2[text()="Salary" and @class="section"]/following-sibling::div[1]/table/tr[position()>1]'
@@ -154,12 +140,12 @@ class CountryModule extends Module
             $type = $i->item(0)->extract();
             $result['salary'][strtolower($type)] = (float)$i->item(1)->extract();
         }
-        
+
         /* EMBARGOES */
-        $countries = $this->getEntityManager()->getRepository('Erpk\Common\Entity\Country');
+        $countries = $this->getEntityManager()->getRepository(Country::class);
         $result['embargoes'] = [];
         $embargoes = $economy->findAll(
-            'h2[text()="Trade embargoes" and @class="section"]'.
+            'h2[text()="Trade embargoes" and @class="section"]' .
             '/following-sibling::div[1]/table/tr[position()>1]'
         );
 
@@ -175,26 +161,21 @@ class CountryModule extends Module
         return $result;
     }
 
-    public function getOnlineCitizens(Entity\Country $country, $page = 1)
+    public function getOnlineCitizens(Country $country, $page = 1)
     {
         $this->getClient()->checkLogin();
-        $request = $this->getClient()->get(
-            'main/online-users/'.$country->getEncodedName().'/all/'.$page
-        );
-        $hxs = $request->send()->xpath();
 
-        $result = [];
-        foreach ($hxs->findAll('//div[@class="citizen"]') as $citizen) {
-            /**
-             * @var Node $citizen
-             */
-            $url = $citizen->find('div[@class="nameholder"]/a[1]/@href')->extract();
-            $result[] = [
-                'id'   => (int)substr($url, strrpos($url, '/')+1),
-                'name' => trim($citizen->find('div[@class="nameholder"]/a[1]')->extract()),
-                'avatar' => $citizen->find('div[@class="avatarholder"]/a[1]/img[1]/@src')->extract()
+        $xs = $this->getClient()->get(
+            'main/online-users/' . $country->getEncodedName() . '/all/' . $page
+        )->send()->xpath();
+
+        return $xs->findAll('//div[@class="citizen"]')->map(function (Node $node) {
+            $url = $node->find('div[@class="nameholder"]/a[1]/@href')->extract();
+            return [
+                'id' => (int)substr($url, strrpos($url, '/') + 1),
+                'name' => trim($node->find('div[@class="nameholder"]/a[1]')->extract()),
+                'avatar' => $node->find('div[@class="avatarholder"]/a[1]/img[1]/@src')->extract()
             ];
-        }
-        return $result;
+        });
     }
 }

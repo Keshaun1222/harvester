@@ -93,24 +93,21 @@ use Erpk\Harvester\Module\Military\MilitaryModule;
 $module = new MilitaryModule($client);
 
 // Get list of active campaigns
-$activeCampaigns = $module->getActiveCampaigns();
-// Get campaign basic information
-$campaign = $module->getCampaign(41661);
-// Get current campaign statistics (points, influence bar)
-$campaignStats = $module->getCampaignStats($campaign);
+$active = $module->getActiveCampaigns();
+$countryId = 35;
+$cotdCampaign = $active->findCampaignOfTheDay($countryId);
+$countryCampaigns = $active->findCountryCampaigns($countryId);
+$alliesCampaigns = $active->findAlliesCampaigns($countryId);
+
 // Get information about Military Unit
 $unit = $module->getUnit(5);
 // Get information about regiment in Military Unit
 $regiment = $module->getRegiment(5, 1);
 
-// Choose weapon Q7 for particular campaign
-$module->changeWeapon($campaign, 7);
-// Make single kill in campaign at default side
-$module->fight($campaign);
-// Make single kill in campaign at attacker side
-$module->fight($campaign, MilitaryModule::SIDE_ATTACKER);
-// Make single kill in campaign at defender side
-$module->fight($campaign, MilitaryModule::SIDE_DEFENDER);
+// Choose weapon Q7 in particular campaign
+$module->changeWeapon($campaignId, 7);
+// Make single kill in campaign at selected side
+$module->fight($campaignId, $sideCountryId);
 
 // Check Daily Order status
 $doStatus = $module->getDailyOrderStatus();

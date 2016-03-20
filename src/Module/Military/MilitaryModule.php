@@ -383,7 +383,7 @@ class MilitaryModule extends Module
 
         $this->getClient()->checkLogin();
 
-        $request = $this->getClient()->post('military/fight-shooot/'.$campaign->getId());
+        $request = $this->getClient()->post('military/fight-shooot/'.$campaign->getId())->csrf();
         $request->markXHR();
         $request->setRelativeReferer('military/battlefield/'.$campaign->getId());
 
@@ -394,7 +394,6 @@ class MilitaryModule extends Module
         }
 
         $request->addPostFields([
-            '_token'   => $this->getSession()->getToken(),
             'battleId' => $campaign->getId(),
             'sideId'   => $sideCountry->getId()
         ]);
@@ -447,10 +446,9 @@ class MilitaryModule extends Module
     {
         $this->getClient()->checkLogin();
 
-        $request = $this->getClient()->post('military/change-weapon');
+        $request = $this->getClient()->post('military/change-weapon')->csrf();
         $request->markXHR();
         $request->addPostFields([
-            '_token'   => $this->getSession()->getToken(),
             'battleId' => $campaign->getId(),
             'customizationLevel' => $customizationLevel
         ]);
@@ -487,11 +485,10 @@ class MilitaryModule extends Module
     {
         $this->getClient()->checkLogin();
 
-        $request = $this->getClient()->post('military/group-missions');
+        $request = $this->getClient()->post('military/group-missions')->csrf();
         $request->markXHR();
         $request->setRelativeReferer();
         $request->addPostFields([
-            '_token'    => $this->getSession()->getToken(),
             'groupId'   => $unitId,
             'missionId' => $missionId,
             'action'    => 'check'

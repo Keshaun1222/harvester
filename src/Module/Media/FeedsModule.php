@@ -76,13 +76,12 @@ class FeedsModule extends Module
     {
         $this->getClient()->checkLogin();
         $url = self::getFeedUrl($wallId, self::POST_CREATE);
-        $request = $this->getClient()->post($url);
+        $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
         $request->setRelativeReferer();
         $request->addPostFields([
             'post_message' => $message,
             'groupId' => $groupId,
-            '_token'  => $this->getSession()->getToken()
         ]);
         return $request->send()->json();
     }
@@ -99,14 +98,13 @@ class FeedsModule extends Module
     {
         $this->getClient()->checkLogin();
         $url = self::getFeedUrl($wallId, self::COMMENT_CREATE);
-        $request = $this->getClient()->post($url);
+        $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
         $request->setRelativeReferer();
         $request->addPostFields([
             'comment_message' => $message,
             'postId' => $postId,
             'groupId' => $groupId,
-            '_token'  => $this->getSession()->getToken()
         ]);
         return $request->send()->json();
     }
@@ -122,13 +120,12 @@ class FeedsModule extends Module
     {
         $this->getClient()->checkLogin();
         $url = self::getFeedUrl($wallId, self::POST_DELETE);
-        $request = $this->getClient()->post($url);
+        $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
         $request->setRelativeReferer();
         $request->addPostFields([
             'postId' => $postId,
             'groupId' => $groupId,
-            '_token'  => $this->getSession()->getToken()
         ]);
         return $request->send()->json();
     }
@@ -145,14 +142,13 @@ class FeedsModule extends Module
     {
         $this->getClient()->checkLogin();
         $url = self::getFeedUrl($wallId, self::COMMENT_DELETE);
-        $request = $this->getClient()->post($url);
+        $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
         $request->setRelativeReferer();
         $request->addPostFields([
             'commentId' => $commentId,
             'postId' => $postId,
             'groupId' => $groupId,
-            '_token'  => $this->getSession()->getToken()
         ]);
         return $request->send()->json();
     }
@@ -161,14 +157,13 @@ class FeedsModule extends Module
     {
         $this->getClient()->checkLogin();
         $url = self::getFeedUrl($wallId, self::POST_RETRIEVE);
-        $request = $this->getClient()->post($url);
+        $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
         $request->setRelativeReferer();
         $request->addPostFields([
             'groupId' => $groupId,
             'page' => $page,
             'view' => $postId,
-            '_token'  => $this->getSession()->getToken()
         ]);
         $response = $request->send();
 
@@ -179,12 +174,11 @@ class FeedsModule extends Module
     {
         $this->getClient()->checkLogin();
         $url = self::getFeedUrl($wallId, self::COMMENT_RETRIEVE);
-        $request = $this->getClient()->post($url);
+        $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
         $request->setRelativeReferer();
         $request->addPostFields([
             'postId' => $postId,
-            '_token'  => $this->getSession()->getToken(),
             'groupId' => $groupId
         ]);
         $response = $request->send();
@@ -334,13 +328,12 @@ class FeedsModule extends Module
 
         $this->getClient()->checkLogin();
         $url = self::getFeedUrl($wallId, self::POST_VOTE);
-        $request = $this->getClient()->post($url);
+        $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
         $request->setRelativeReferer();
         $request->addPostFields([
             'postId' => $postId,
             'likeStatus' => $likeStatus,
-            '_token'  => $this->getSession()->getToken()
         ]);
         return $request->send()->json();
     }
@@ -362,14 +355,13 @@ class FeedsModule extends Module
 
         $this->getClient()->checkLogin();
         $url = self::getFeedUrl($wallId, self::POST_VOTE);
-        $request = $this->getClient()->post($url);
+        $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
         $request->setRelativeReferer();
         $request->addPostFields([
             'postId' => $postId,
             'commentId' => $commentId,
             'likeStatus' => $likeStatus,
-            '_token'  => $this->getSession()->getToken()
         ]);
         return $request->send()->json();
     }

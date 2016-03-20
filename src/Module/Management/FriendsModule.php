@@ -28,11 +28,10 @@ class FriendsModule extends Module
         }
 
         $url = 'main/messages-compose/'.$citizenId;
-        $request = $this->getClient()->post($url);
+        $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
         $request->setRelativeReferer($url);
         $request->addPostFields([
-            '_token'          => $this->getSession()->getToken(),
             'citizen_name'    => $citizens,
             'citizen_subject' => $subject,
             'citizen_message' => $content
@@ -48,11 +47,10 @@ class FriendsModule extends Module
         $this->getClient()->checkLogin();
 
         $url = 'main/messages-compose/0';
-        $request = $this->getClient()->post($url);
+        $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
         $request->setRelativeReferer($url);
         $request->addPostFields([
-            '_token'          => $this->getSession()->getToken(),
             'thread_id'       => $threadId,
             'citizen_message' => $messagebody
         ]);
@@ -66,11 +64,10 @@ class FriendsModule extends Module
         $threadId = Filter::id($threadId);
         $this->getClient()->checkLogin();
 
-        $request = $this->getClient()->post('main/messages-delete');
+        $request = $this->getClient()->post('main/messages-delete')->csrf();
         $request->markXHR();
         $request->setRelativeReferer('main/messages-inbox');
         $request->addPostFields([
-            '_token' => $this->getSession()->getToken(),
             'delete_message[]' => $threadId,
         ]);
 

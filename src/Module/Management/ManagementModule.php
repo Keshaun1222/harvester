@@ -47,11 +47,10 @@ class ManagementModule extends Module
         $this->getClient()->checkLogin();
 
         $url = 'main/messages-compose/'.$citizenId;
-        $request = $this->getClient()->post($url);
+        $request = $this->getClient()->post($url)->csrf();
         $request->markXHR();
         $request->setRelativeReferer($url);
         $request->addPostFields([
-            '_token'          => $this->getSession()->getToken(),
             'citizen_name'    => $citizenId,
             'citizen_subject' => $subject,
             'citizen_message' => $content
@@ -161,11 +160,10 @@ class ManagementModule extends Module
             }
         }
 
-        $request = $this->getClient()->post('economy/train');
+        $request = $this->getClient()->post('economy/train')->csrf();
         $request->markXHR();
         $request->setRelativeReferer('economy/training-grounds');
         $request->addPostFields([
-            '_token'  => $this->getSession()->getToken(),
             'grounds' => $toTrain
         ]);
 
@@ -175,14 +173,9 @@ class ManagementModule extends Module
     protected function work($postFields)
     {
         $this->getClient()->checkLogin();
-        $request = $this->getClient()->post('economy/work');
+        $request = $this->getClient()->post('economy/work')->csrf();
         $request->markXHR();
         $request->setRelativeReferer('economy/myCompanies');
-
-        $postFields = array_merge($postFields, [
-            '_token' => $this->getSession()->getToken()
-        ]);
-
         $request->addPostFields($postFields);
         return $request->send()->json();
     }

@@ -18,14 +18,13 @@ class PressModule extends Module
     {
         $this->getClient()->checkLogin();
 
-        $request = $this->getClient()->post('main/write-article');
+        $request = $this->getClient()->post('main/write-article')->csrf();
         $request->setRelativeReferer('main/write-article');
         $request->addPostFields([
             'article_name' => $articleName,
             'article_body' => $articleBody,
             'article_location' => $articleLocation->getId(),
             'article_category' => $articleCategory,
-            '_token'  => $this->getSession()->getToken()
         ]);
         $response = $request->send();
 
@@ -39,14 +38,13 @@ class PressModule extends Module
     public function editArticle(Article $article, $articleName, $articleBody, $articleCategory)
     {
         $this->getClient()->checkLogin();
-        $request = $this->getClient()->post('main/edit-article/'.$article->getId());
+        $request = $this->getClient()->post('main/edit-article/'.$article->getId())->csrf();
         $request->setRelativeReferer('main/edit-article/'.$article->getId());
         $request->addPostFields([
             'commit' => 'Edit',
             'article_name' => $articleName,
             'article_body' => $articleBody,
             'article_category' => $articleCategory,
-            '_token' => $this->getSession()->getToken()
         ]);
         $response = $request->send();
         return $response->getBody(true);
@@ -249,11 +247,10 @@ class PressModule extends Module
         unset($xs);
 
         for ($p = 2; $p <= $pagesTotal; $p++) {
-            $request = $this->getClient()->post('main/article-comment/loadMoreComments/');
+            $request = $this->getClient()->post('main/article-comment/loadMoreComments/')->csrf();
             $request->addPostFields([
                 'articleId' => $id,
                 'page'      => $p,
-                '_token'    => $this->getSession()->getToken()
             ]);
             $xs = $request->send()->xpath();
 

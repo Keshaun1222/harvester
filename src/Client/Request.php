@@ -126,7 +126,7 @@ class Request
     }
 
     /**
-     * @return Request $this
+     * @return Request|$this
      */
     public function csrf()
     {

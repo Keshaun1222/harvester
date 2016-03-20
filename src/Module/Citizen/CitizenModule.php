@@ -43,7 +43,7 @@ class CitizenModule extends Module
             }
         }
     }
-    
+
     /**
      * Parses citizen's profile HTML page and returns useful information
      * @param  string $html HTML content of citizen's profile page
@@ -53,9 +53,9 @@ class CitizenModule extends Module
     public static function parseProfile($html)
     {
         $em = EntityManager::getInstance();
-        
         $countries = $em->getRepository(Country::class);
         $regions = $em->getRepository(Region::class);
+
         $parseStat = function ($string, $float = false) {
             $string = trim($string);
             $string = substr($string, 0, strpos($string, '/'));
@@ -70,7 +70,7 @@ class CitizenModule extends Module
         $sidebar  = $content->find('//div[@class="citizen_sidebar"][1]');
         $second   = $content->find('//div[@class="citizen_second"]');
         $state    = $content->find('//div[@class="citizen_state"]');
-        
+
         /**
          * BASIC DATA
          */
@@ -81,18 +81,18 @@ class CitizenModule extends Module
         } catch (NodeNotFoundException $e) {
             $result['id'] = null;
         }
-        
+
         $result['name'] = $content->find('//img[@class="citizen_avatar"]/@alt')->extract();
 
         $birth = new DateTime(trim($second->find('p[2]')->extract()));
         $result['birth'] = $birth->format('Y-m-d');
-        
+
         $avatar = $content->find('//img[@class="citizen_avatar"][1]/@style')->extract();
         $avatar = OldSelector\RegEx::find($avatar, '/background-image\: url\(([^)]+)\);/i');
         $result['avatar'] = $avatar->group(0);
-        
+
         $result['online'] = $content->findOneOrNull('//span[@class="online_status on"][1]') != null;
-        
+
         /**
          * BAN/DEAD
          */
@@ -109,7 +109,7 @@ class CitizenModule extends Module
         }
 
         $result['alive'] = $state->findOneOrNull('div/span/img[contains(@src, "dead_citizen")]/../..') == null;
-        
+
         $exp = $content->find('//strong[@class="citizen_level"][1]');
         $result['level'] = (int)trim($exp->extract());
         $result['experience'] = $parseStat(
@@ -170,7 +170,7 @@ class CitizenModule extends Module
             'country' => $countries->findOneByName($info->find('a[1]/@title')->extract()),
             'region'  => $regions->findOneByName($info->find('a[2]/@title')->extract()),
         ];
-        
+
         if (!isset($result['residence']['country'], $result['residence']['region'], $result['citizenship'])) {
             throw new ScrapeException;
         }
@@ -229,7 +229,7 @@ class CitizenModule extends Module
             $url    = $newspaper->find('div[1]/a[1]/@href')->extract();
             $start  = strrpos($url, '-')+1;
             $length = strrpos($url, '/')-$start;
-            
+
             $result['newspaper'] = [
                 'id'        => (int)substr($url, $start, $length),
                 'name'      => $newspaper->find('div[1]/a/@title')->extract(),
@@ -239,7 +239,7 @@ class CitizenModule extends Module
         } else {
             $result['newspaper'] = null;
         }
-        
+
         $citizenContent = $content->find('div[@class="citizen_content"][1]');
 
         // Top Damage
@@ -299,10 +299,10 @@ class CitizenModule extends Module
             $result['medals'][$type] = $count ? (int)$count->extract() : 0;
         }
         ksort($result['medals']);
-        
+
         return $result;
     }
-    
+
     /**
      * Searches for matching citizen
      * @param  string  $searchQuery Citizen name
@@ -319,7 +319,7 @@ class CitizenModule extends Module
         $query = $request->getQuery();
         $query->set('q', $searchQuery);
         $query->set('page', $page);
-        
+
         $xs = $request->send()->xpath();
 
         $result = [];

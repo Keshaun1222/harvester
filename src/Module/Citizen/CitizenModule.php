@@ -4,6 +4,8 @@ namespace Erpk\Harvester\Module\Citizen;
 use Erpk\Common\Citizen\Helpers;
 use Erpk\Common\Citizen\Rank;
 use Erpk\Common\DateTime;
+use Erpk\Common\Entity\Country;
+use Erpk\Common\Entity\Region;
 use Erpk\Common\EntityManager;
 use Erpk\Harvester\Client\Selector as OldSelector;
 use Erpk\Harvester\Exception\ScrapeException;
@@ -51,9 +53,9 @@ class CitizenModule extends Module
     public static function parseProfile($html)
     {
         $em = EntityManager::getInstance();
-        $countries = $em->getRepository('Erpk\Common\Entity\Country');
-        $regions = $em->getRepository('Erpk\Common\Entity\Region');
         
+        $countries = $em->getRepository(Country::class);
+        $regions = $em->getRepository(Region::class);
         $parseStat = function ($string, $float = false) {
             $string = trim($string);
             $string = substr($string, 0, strpos($string, '/'));

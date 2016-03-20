@@ -153,7 +153,7 @@ $module = new JobMarketModule($client);
 // Job offers in Poland, page 1
 use Erpk\Common\EntityManager;
 $em = EntityManager::getInstance();
-$countries = $em->getRepository('\Erpk\Common\Entity\Country');
+$countries = $em->getRepository(Country::class);
 
 $poland = $countries->findOneByCode('PL');
 $offers = $module->scan($poland, 1);
@@ -182,7 +182,7 @@ $module = new CountryModule($client);
 // Get Country entity instance
 use Erpk\Common\EntityManager;
 $em = EntityManager::getInstance();
-$countries = $em->getRepository('Erpk\Common\Entity\Country');
+$countries = $em->getRepository(Country::class);
 $poland = $countries->findOneByCode('PL');
 
 // Get country's society data

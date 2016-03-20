@@ -5,8 +5,9 @@ use Erpk\Harvester\Module\Module;
 use Erpk\Harvester\Exception\ScrapeException;
 use Erpk\Harvester\Client\Selector;
 use Erpk\Common\Citizen\Rank;
-use Erpk\Common\Entity\Country;
 use Erpk\Common\DateTime;
+use Erpk\Common\Entity\Country;
+use Erpk\Common\Entity\Region;
 use GuzzleHttp\Exception\ClientException;
 use XPathSelector\Node;
 
@@ -87,10 +88,10 @@ class MilitaryModule extends Module
         $defenderId = (int)($match('defenderId', '\d+')[1]);
         $isResistance = $match('isResistance', '\d+')[1] == 1;
 
-        $regions = $this->getEntityManager()->getRepository('Erpk\Common\Entity\Region');
-        $countries = $this->getEntityManager()->getRepository('Erpk\Common\Entity\Country');
         
         $campaign = new Campaign();
+        $regions = $this->getEntityManager()->getRepository(Region::class);
+        $countries = $this->getEntityManager()->getRepository(Country::class);
         $campaign->setId($id);
         $campaign->setAttacker($countries->find($mustInvert ? $defenderId : $invaderId));
         $campaign->setDefender($countries->find($mustInvert ? $invaderId : $defenderId));
@@ -160,7 +161,7 @@ class MilitaryModule extends Module
     {
         $this->getClient()->checkLogin();
 
-        $countries = $this->getEntityManager()->getRepository('Erpk\Common\Entity\Country');
+        $countries = $this->getEntityManager()->getRepository(Country::class);
         $request = $this->getClient()->get('military/battle-stats/'.$campaign->getId().'/1');
         $stats = $request->send()->json();
 
@@ -255,7 +256,7 @@ class MilitaryModule extends Module
         $content = $hxs->find('//div[@id="content"]');
         $header = $content->find('div[@id="military_group_header"]');
         
-        $countries = $this->getEntityManager()->getRepository('Erpk\Common\Entity\Country');
+        $countries = $this->getEntityManager()->getRepository(Country::class);
         $country = $header->find('div[@class="header_content"]/div[@class="details"]/a[1]/img/@alt')->extract();
         $country = $countries->findOneByName($country);
         if (!$country) {
@@ -331,7 +332,7 @@ class MilitaryModule extends Module
         }
         
         $result = [];
-        $countries = $this->getEntityManager()->getRepository('Erpk\Common\Entity\Country');
+        $countries = $this->getEntityManager()->getRepository(Country::class);
         
         $hxs = $response->xpath();
         

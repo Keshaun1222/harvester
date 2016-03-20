@@ -1,6 +1,7 @@
 <?php
 namespace Erpk\Harvester\Module\Politics;
 
+use Erpk\Common\Entity\Country;
 use Erpk\Harvester\Client\Selector;
 use Erpk\Harvester\Exception\NotFoundException;
 use Erpk\Harvester\Exception\ScrapeException;
@@ -32,7 +33,7 @@ class PoliticsModule extends Module
         $about = $hxs->findOneOrNull('//div[@class="about_message party_section"][1]/p[1]');
         $info = $hxs->find('//div[@class="infoholder"][1]');
         $congress = $hxs->find('//a[@name="congress"][1]/..');
-        $countries = $this->getEntityManager()->getRepository('Erpk\Common\Entity\Country');
+        $countries = $this->getEntityManager()->getRepository(Country::class);
         
         $result['name']         = $profileholder->find('h1[1]')->extract();
         $result['about']        = $about ? trim($about->extract()) : null;

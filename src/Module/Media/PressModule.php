@@ -195,7 +195,7 @@ class PressModule extends Module
         $date = $xs->find('//div[@class="post_details"]/em[@class="date"]');
 
         $em = EntityManager::getInstance();
-        $countries = $em->getRepository('Erpk\Common\Entity\Country');
+        $countries = $em->getRepository(Country::class);
 
         try {
             $subscribers = (int)$xs->find('//em[@class="subscribers"]')->extract();
@@ -296,7 +296,7 @@ class PressModule extends Module
         }
         
         $em = EntityManager::getInstance();
-        $countries = $em->getRepository('Erpk\Common\Entity\Country');
+        $countries = $em->getRepository(Country::class);
 
         $result = [
             'director' => [

@@ -13,14 +13,14 @@ class Comment
 
     public function toArray()
     {
-        return array(
-                'postId'       =>  $this->postId,
-                'commentId'       =>  $this->commentId,
-                'profileId'   =>  $this->profileId,
-                'profileName'    =>  $this->profileName,
-                'reportRef'    =>  $this->reportRef,
-                'time'    =>  $this->time,
-                'message'    =>  $this->message,
-        );
+        return [
+            'postId' => $this->postId,
+            'commentId' => $this->commentId,
+            'profileId' => $this->profileId,
+            'profileName' => $this->profileName,
+            'reportRef' => $this->reportRef,
+            'time' => $this->time,
+            'message' => $this->message,
+        ];
     }
 }

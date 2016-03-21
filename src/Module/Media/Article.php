@@ -29,6 +29,6 @@ class Article
 
     public function getUrl($locale = 'en')
     {
-        return 'http://www.erepublik.com/'.$locale.'/article/'.$this->getId().'/1/20';
+        return 'http://www.erepublik.com/' . $locale . '/article/' . $this->getId() . '/1/20';
     }
 }

@@ -20,19 +20,19 @@ class CitizenModule extends Module
 {
     /**
      * Returns information on given citizen
-     * @param  int   $id  Citizen ID
-     * @return array      Citizen information
+     * @param int $citizenId
+     * @return array
      * @throws NotFoundException
      */
-    public function getProfile($id)
+    public function getProfile($citizenId)
     {
-        $request = $this->getClient()->get('citizen/profile/'.$id);
+        $request = $this->getClient()->get('citizen/profile/' . $citizenId);
         $request->disableCookies();
 
         try {
             $response = $request->send();
             $result = self::parseProfile($response->getBody(true));
-            $result['id'] = $id;
+            $result['id'] = $citizenId;
             return $result;
         } catch (ClientException $e) {
             if ($e->getResponse()->getStatusCode() == 404) {
@@ -44,9 +44,9 @@ class CitizenModule extends Module
     }
 
     /**
-     * Parses citizen's profile HTML page and returns useful information
-     * @param  string $html HTML content of citizen's profile page
-     * @return array        Information about citizen
+     * Parses citizen profile HTML page and returns useful information
+     * @param string $html HTML source of citizen profile page
+     * @return array
      * @throws ScrapeException
      */
     public static function parseProfile($html)
@@ -65,10 +65,10 @@ class CitizenModule extends Module
         $xs = Selector::loadHTML($html);
         $result = [];
 
-        $content  = $xs->find('//div[@id="content"][1]');
-        $sidebar  = $content->find('//div[@class="citizen_sidebar"][1]');
-        $second   = $content->find('//div[@class="citizen_second"]');
-        $state    = $content->find('//div[@class="citizen_state"]');
+        $content = $xs->find('//div[@id="content"][1]');
+        $sidebar = $content->find('//div[@class="citizen_sidebar"][1]');
+        $second = $content->find('//div[@class="citizen_second"]');
+        $state = $content->find('//div[@class="citizen_state"]');
 
         /**
          * BASIC DATA
@@ -167,7 +167,7 @@ class CitizenModule extends Module
         $result['citizenship'] = $countries->findOneByName((string)$info->find('a[3]/img[1]/@title')->extract());
         $result['residence'] = [
             'country' => $countries->findOneByName($info->find('a[1]/@title')->extract()),
-            'region'  => $regions->findOneByName($info->find('a[2]/@title')->extract()),
+            'region' => $regions->findOneByName($info->find('a[2]/@title')->extract()),
         ];
 
         if (!isset($result['residence']['country'], $result['residence']['region'], $result['citizenship'])) {
@@ -192,13 +192,13 @@ class CitizenModule extends Module
                 $result['party'] = null;
             } else {
                 $url = $url->extract();
-                $start = strrpos($url, '-')+1;
-                $length = strrpos($url, '/')-$start;
+                $start = strrpos($url, '-') + 1;
+                $length = strrpos($url, '/') - $start;
                 $result['party'] = array(
-                    'id'    =>  (int)substr($url, $start, $length),
-                    'name'  =>  trim($party->find('div[1]/span/a')->extract()),
-                    'avatar'=>  $party->find('div/img/@src')->extract(),
-                    'role'  =>  trim($party->find('h3[1]')->extract())
+                    'id' => (int)substr($url, $start, $length),
+                    'name' => trim($party->find('div[1]/span/a')->extract()),
+                    'avatar' => $party->find('div/img/@src')->extract(),
+                    'role' => trim($party->find('h3[1]')->extract())
                 );
             }
         } else {
@@ -212,11 +212,11 @@ class CitizenModule extends Module
             $avatar = $unit->find('div[1]/a[1]/img[1]/@src')->extract();
             $createdAt = preg_replace('#.*([0-9]{4})/([0-9]{2})/([0-9]{2}).*#', '\1-\2-\3', $avatar);
             $result['military']['unit'] = [
-                'id'         => (int)substr($url, strrpos($url, '/')+1),
-                'name'       => $unit->find('div[1]/a[1]/span[1]')->extract(),
+                'id' => (int)substr($url, strrpos($url, '/') + 1),
+                'name' => $unit->find('div[1]/a[1]/span[1]')->extract(),
                 'created_at' => $createdAt,
-                'avatar'     => $avatar,
-                'role'       => trim($unit->find('h3[1]')->extract())
+                'avatar' => $avatar,
+                'role' => trim($unit->find('h3[1]')->extract())
             ];
         } else {
             $result['military']['unit'] = null;
@@ -225,15 +225,15 @@ class CitizenModule extends Module
         // Newspaper
         $newspaper = $places->item(2);
         if ($newspaper->findOneOrNull('div[1]')) {
-            $url    = $newspaper->find('div[1]/a[1]/@href')->extract();
-            $start  = strrpos($url, '-')+1;
-            $length = strrpos($url, '/')-$start;
+            $url = $newspaper->find('div[1]/a[1]/@href')->extract();
+            $start = strrpos($url, '-') + 1;
+            $length = strrpos($url, '/') - $start;
 
             $result['newspaper'] = [
-                'id'        => (int)substr($url, $start, $length),
-                'name'      => $newspaper->find('div[1]/a/@title')->extract(),
-                'avatar'    => $newspaper->find('div[1]/a[1]/img[1]/@src')->extract(),
-                'role'      => trim($newspaper->find('h3[1]')->extract())
+                'id' => (int)substr($url, $start, $length),
+                'name' => $newspaper->find('div[1]/a/@title')->extract(),
+                'avatar' => $newspaper->find('div[1]/a[1]/img[1]/@src')->extract(),
+                'role' => trim($newspaper->find('h3[1]')->extract())
             ];
         } else {
             $result['newspaper'] = null;
@@ -243,7 +243,7 @@ class CitizenModule extends Module
 
         // Top Damage
         $topDamage = $citizenContent->findOneOrNull(
-            'h3/img[@title="Top damage is only updated at the end of the campaign"]'.
+            'h3/img[@title="Top damage is only updated at the end of the campaign"]' .
             '/../following-sibling::div[@class="citizen_military"][1]'
         );
         if ($topDamage) {
@@ -252,8 +252,8 @@ class CitizenModule extends Module
             if (preg_match('/Achieved while .*? on day ([0-9,]+)/', $stat, $matches)) {
                 $dateTime = DateTime::createFromDay((int)str_replace(',', '', $matches[1]));
                 $result['top_damage'] = [
-                    'damage'  => $damage,
-                    'date'    => $dateTime->format('Y-m-d'),
+                    'damage' => $damage,
+                    'date' => $dateTime->format('Y-m-d'),
                     'message' => trim($stat, "\xC2\xA0\n")
                 ];
             } else {
@@ -274,7 +274,7 @@ class CitizenModule extends Module
                 $dateTime = DateTime::createFromDay($since[1]);
                 $result['true_patriot'] = [
                     'damage' => $damage,
-                    'since'  => $dateTime->format('Y-m-d')
+                    'since' => $dateTime->format('Y-m-d')
                 ];
             } else {
                 throw new ScrapeException();
@@ -303,11 +303,10 @@ class CitizenModule extends Module
     }
 
     /**
-     * Searches for matching citizen
-     * @param  string  $searchQuery Citizen name
-     * @param  integer $page  Page number
-     * @return array          List of matching citizens
-     * @throws ScrapeException
+     * Searches for matching citizens
+     * @param string $searchQuery
+     * @param int $page
+     * @return array
      */
     public function search($searchQuery, $page = 1)
     {

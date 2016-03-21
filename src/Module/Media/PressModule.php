@@ -1,14 +1,13 @@
 <?php
 namespace Erpk\Harvester\Module\Media;
 
+use Erpk\Common\DateTime;
+use Erpk\Common\Entity\Country;
+use Erpk\Common\EntityManager;
+use Erpk\Harvester\Client\Selector\Paginator;
+use Erpk\Harvester\Exception\NotFoundException;
 use Erpk\Harvester\Exception\ScrapeException;
 use Erpk\Harvester\Module\Module;
-use Erpk\Harvester\Filter;
-use Erpk\Harvester\Client\Selector\Paginator;
-use Erpk\Common\DateTime;
-use Erpk\Common\EntityManager;
-use Erpk\Common\Entity\Country;
-use Erpk\Harvester\Exception\NotFoundException;
 use GuzzleHttp\Psr7\Uri;
 use XPathSelector\Exception\NodeNotFoundException;
 use XPathSelector\Node;
@@ -33,11 +32,11 @@ class PressModule extends Module
             throw new ScrapeException();
         }
     }
-    
+
     public function editArticle(Article $article, $articleName, $articleBody, $articleCategory)
     {
-        $request = $this->getClient()->post('main/edit-article/'.$article->getId())->csrf();
-        $request->setRelativeReferer('main/edit-article/'.$article->getId());
+        $request = $this->getClient()->post('main/edit-article/' . $article->getId())->csrf();
+        $request->setRelativeReferer('main/edit-article/' . $article->getId());
         $request->addPostFields([
             'commit' => 'Edit',
             'article_name' => $articleName,
@@ -50,7 +49,7 @@ class PressModule extends Module
 
     public function deleteArticle(Article $article)
     {
-        $request = $this->getClient()->get('main/delete-article/'.$article->getId().'/1');
+        $request = $this->getClient()->get('main/delete-article/' . $article->getId() . '/1');
         $request->send();
     }
 
@@ -96,7 +95,7 @@ class PressModule extends Module
 
             $id = (int)str_replace('comment', '', $node->find('@id')->extract());
             try {
-                $votes   = (int)trim($right->find('ul[1]/li/a[@id="nr_vote_'.$id.'"]')->extract());
+                $votes = (int)trim($right->find('ul[1]/li/a[@id="nr_vote_' . $id . '"]')->extract());
                 $deleted = false;
                 if ($level > 0) {
                     $date = $right->find('ul[1]/li/span[@class="article_comment_posted_at"]');
@@ -106,8 +105,8 @@ class PressModule extends Module
                 $date = self::parseDate($date->extract());
             } catch (\Exception $e) {
                 $deleted = true;
-                $votes   = null;
-                $date    = null;
+                $votes = null;
+                $date = null;
             }
 
             switch ($level) {
@@ -149,7 +148,7 @@ class PressModule extends Module
                 'content_html' => trim($content->innerHTML())
             ];
         });
-        
+
         // determine parent_ids for every comment
         $levels = [];
         $before = null;
@@ -200,11 +199,11 @@ class PressModule extends Module
         }
 
         $article = [
-            'id'  => $id,
+            'id' => $id,
             'url' => Uri::resolve($this->getClient()->getBaseUri(), $url),
             'date' => self::parseDate($date->extract()),
             'title' => $xs->find('//div[@class="post_content"][1]/h2[1]/a[1]')->extract(),
-            'votes' => (int)trim($xs->find('//strong[@class="numberOfVotes_'.$id.'"][1]')->extract()),
+            'votes' => (int)trim($xs->find('//strong[@class="numberOfVotes_' . $id . '"][1]')->extract()),
             'category' => null,
             'newspaper' => [
                 'id' => (int)$xs->find('//input[@id="newspaper_id"]/@value')->extract(),
@@ -246,7 +245,7 @@ class PressModule extends Module
             $request = $this->getClient()->post('main/article-comment/loadMoreComments/')->csrf();
             $request->addPostFields([
                 'articleId' => $id,
-                'page'      => $p,
+                'page' => $p,
             ]);
             $xs = $request->send()->xpath();
 
@@ -263,9 +262,7 @@ class PressModule extends Module
 
     public function getNewspaper($id, $pageLimit = null)
     {
-        $id = Filter::id($id);
-
-        $response = $this->getClient()->get('newspaper/'.$id)->send();
+        $response = $this->getClient()->get('newspaper/' . $id)->send();
         if (!$response->isRedirect()) {
             throw new ScrapeException();
         }
@@ -275,68 +272,68 @@ class PressModule extends Module
             throw new NotFoundException("Newspaper ID:$id does not exist.");
         }
 
-        $newspaperUrl = $this->getClient()->getBaseUrl().$location;
+        $newspaperUrl = $this->getClient()->getBaseUrl() . $location;
         $xs = $this->getClient()->get($newspaperUrl)->send()->xpath();
         $paginator = new Paginator($xs);
 
-        $info   = $xs->find('//div[@class="newspaper_head"]');
+        $info = $xs->find('//div[@class="newspaper_head"]');
         $avatar = $info->find('//img[@class="avatar"]/@src')->extract();
-        $url    = explode('/', $info->find('div[@class="info"]/h1/a[1]/@href')->extract())[3];
+        $url = explode('/', $info->find('div[@class="info"]/h1/a[1]/@href')->extract())[3];
         $director = $info->find('div[2]/ul[1]/li[1]/a[1]');
-        
+
 
         $desc = $xs->find('//meta[@name="description"]/@content')->extract();
         if (!preg_match('/has (\d+) articles/', $desc, $articlesCount)) {
             throw new ScrapeException();
         }
-        
+
         $em = EntityManager::getInstance();
         $countries = $em->getRepository(Country::class);
 
         $result = [
             'director' => [
-                'id'   => (int)explode('/', $director->find('@href')->extract())[4],
+                'id' => (int)explode('/', $director->find('@href')->extract())[4],
                 'name' => $director->find('@title')->extract()
             ],
-            'name'          => $info->find('//h1/a/@title')->extract(),
-            'url'           => $newspaperUrl,
-            'avatar'        => str_replace('55x55', '100x100', $avatar),
-            'country'       => $countries->findOneByName($info->find('div[1]/a[1]/img[2]/@title')->extract()),
-            'subscribers'   => (int)$info->find('div[@class="actions"]')->extract(),
+            'name' => $info->find('//h1/a/@title')->extract(),
+            'url' => $newspaperUrl,
+            'avatar' => str_replace('55x55', '100x100', $avatar),
+            'country' => $countries->findOneByName($info->find('div[1]/a[1]/img[2]/@title')->extract()),
+            'subscribers' => (int)$info->find('div[@class="actions"]')->extract(),
             'article_count' => (int)$articlesCount[1],
-            'articles'      => []
+            'articles' => []
         ];
 
-        $pages  = $paginator->getLastPage();
+        $pages = $paginator->getLastPage();
         if ($pageLimit !== null && $pages > $pageLimit) {
             $pages = $pageLimit;
         }
 
         for ($page = 1; $page <= $pages; $page++) {
-            $xs = $this->getClient()->get('newspaper/'.$url.'/'.$page)->send()->xpath();
+            $xs = $this->getClient()->get('newspaper/' . $url . '/' . $page)->send()->xpath();
             foreach ($xs->findAll('//div[@class="post"]') as $art) {
-                $title    = $art->find('div[2]/h2/a')->extract();
-                $artUrl   = 'http://www.erepublik.com'.$art->find('div[2]/h2/a/@href')->extract();
-                $votes    = $art->find('div[1]/div[1]/strong')->extract();
+                $title = $art->find('div[2]/h2/a')->extract();
+                $artUrl = 'http://www.erepublik.com' . $art->find('div[2]/h2/a/@href')->extract();
+                $votes = $art->find('div[1]/div[1]/strong')->extract();
                 $comments = $art->find('div[2]/div[1]/a[1]')->extract();
-                $date     = $art->find('div[2]/div[1]/em')->extract();
+                $date = $art->find('div[2]/div[1]/em')->extract();
                 try {
                     $category = trim($art->find('div[2]/div[1]/a[3]')->extract());
                 } catch (NodeNotFoundException $e) {
                     $category = null;
                 }
-                
+
                 $result['articles'][] = array(
-                    'title'    => $title,
-                    'url'      => $artUrl,
-                    'votes'    => (int)$votes,
+                    'title' => $title,
+                    'url' => $artUrl,
+                    'votes' => (int)$votes,
                     'comments' => (int)$comments,
-                    'date'     => self::parseDate($date),
+                    'date' => self::parseDate($date),
                     'category' => $category
                 );
             }
         }
-        
+
         return $result;
     }
 }

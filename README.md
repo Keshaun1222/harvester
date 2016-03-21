@@ -148,12 +148,9 @@ use Erpk\Harvester\Module\JobMarket\JobMarketModule;
 $module = new JobMarketModule($client);
 
 // Job offers in Poland, page 1
-use Erpk\Common\EntityManager;
-$em = EntityManager::getInstance();
-$countries = $em->getRepository(Country::class);
-
-$poland = $countries->findOneByCode('PL');
-$offers = $module->scan($poland, 1);
+$countryId = 35;
+$page = 1;
+$offers = $module->scan($countryId, $page);
 ```
 
 ###Market

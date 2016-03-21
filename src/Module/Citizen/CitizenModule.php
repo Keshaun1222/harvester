@@ -8,6 +8,7 @@ use Erpk\Common\Entity\Country;
 use Erpk\Common\Entity\Region;
 use Erpk\Common\EntityManager;
 use Erpk\Harvester\Client\Selector as OldSelector;
+use Erpk\Harvester\Exception\NotFoundException;
 use Erpk\Harvester\Exception\ScrapeException;
 use Erpk\Harvester\Module\Module;
 use GuzzleHttp\Exception\ClientException;
@@ -21,6 +22,7 @@ class CitizenModule extends Module
      * Returns information on given citizen
      * @param  int   $id  Citizen ID
      * @return array      Citizen information
+     * @throws NotFoundException
      */
     public function getProfile($id)
     {
@@ -34,7 +36,7 @@ class CitizenModule extends Module
             return $result;
         } catch (ClientException $e) {
             if ($e->getResponse()->getStatusCode() == 404) {
-                throw new Exception\CitizenNotFoundException('Citizen '.$id.' not found.');
+                throw new NotFoundException("Citizen ID:$citizenId does not exist.");
             } else {
                 throw $e;
             }

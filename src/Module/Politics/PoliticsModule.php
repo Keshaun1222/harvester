@@ -17,7 +17,7 @@ class PoliticsModule extends Module
             if (strpos($response->getLocation(), '/party/') != false) {
                 $response = $this->getClient()->get($response->getLocation())->send();
             } else {
-                throw new NotFoundException("Political party with ID $id does not exist.");
+                throw new NotFoundException("Political party ID:$id does not exist.");
             }
         }
 

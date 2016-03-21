@@ -8,6 +8,7 @@ use Erpk\Harvester\Client\Selector\Paginator;
 use Erpk\Common\DateTime;
 use Erpk\Common\EntityManager;
 use Erpk\Common\Entity\Country;
+use Erpk\Harvester\Exception\NotFoundException;
 use GuzzleHttp\Psr7\Uri;
 use XPathSelector\Exception\NodeNotFoundException;
 use XPathSelector\Node;
@@ -181,7 +182,7 @@ class PressModule extends Module
         $url = $this->getClient()->get("article/$id/1/20")->send()->getLocation();
 
         if (stripos($url, 'article') === false) {
-            throw new Exception\ArticleNotFoundException("Article with ID $id has not been found.");
+            throw new NotFoundException("Article ID:$id does not exist.");
         }
 
         $xs = $this->getClient()->get($url)->send()->xpath();
@@ -271,7 +272,7 @@ class PressModule extends Module
 
         $location = $response->getLocation();
         if ($location == '/en') {
-            throw new Exception\NewspaperNotFoundException('Newspaper with ID '.$id.' does not exist');
+            throw new NotFoundException("Newspaper ID:$id does not exist.");
         }
 
         $newspaperUrl = $this->getClient()->getBaseUrl().$location;

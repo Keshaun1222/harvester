@@ -1,8 +1,8 @@
 <?php
 namespace Erpk\Harvester\Module\Management;
 
-use Erpk\Harvester\Exception\ScrapeException;
 use Erpk\Harvester\Client\Selector;
+use Erpk\Harvester\Exception\ScrapeException;
 use Erpk\Harvester\Module\Module;
 use XPathSelector\Node;
 
@@ -10,7 +10,6 @@ class ManagementModule extends Module
 {
     public function eat()
     {
-        
         $request = $this->getClient()->get('main/eat')->xhr();
         $request->setRelativeReferer();
 
@@ -24,7 +23,6 @@ class ManagementModule extends Module
 
     public function getEnergyStatus()
     {
-        
         $request = $this->getClient()->get();
         $hxs = $request->send()->xpath();
 
@@ -41,41 +39,41 @@ class ManagementModule extends Module
 
     public function sendMessage($citizenId, $subject, $content)
     {
-        $url = 'main/messages-compose/'.$citizenId;
+        $url = 'main/messages-compose/' . $citizenId;
         $request = $this->getClient()->post($url)->csrf()->xhr();
         $request->setRelativeReferer($url);
         $request->addPostFields([
-            'citizen_name'    => $citizenId,
+            'citizen_name' => $citizenId,
             'citizen_subject' => $subject,
             'citizen_message' => $content
         ]);
 
         return $request->send()->getBody(true);
     }
-    
+
     public function getInventory()
     {
         $request = $this->getClient()->get('economy/inventory');
         $request->setRelativeReferer('economy/myCompanies');
         $hxs = $request->send()->xpath();
-        
+
         $result = [];
-        
+
         $parseItem = function (Node $item) use (&$result) {
             $ex = explode('_', str_replace('stock_', '', $item->find('strong/@id')->extract()));
-            $result['items'][(int)$ex[0]][(int)$ex[1]] = (int)strtr($item->find('strong')->extract(), [','=>'']);
+            $result['items'][(int)$ex[0]][(int)$ex[1]] = (int)strtr($item->find('strong')->extract(), [',' => '']);
         };
-        
+
         $items = $hxs->findAll('//*[@class="item_mask"][1]/ul[1]/li');
         foreach ($items as $item) {
             $parseItem($item);
         }
-        
+
         $items = $hxs->findAll('//*[@class="item_mask"][2]/ul[1]/li');
         foreach ($items as $item) {
             $parseItem($item);
         }
-        
+
         $storage = trim($hxs->find('//*[@class="area storage"][1]/h4[1]/strong[1]')->extract());
         $storage = strtr($storage, [
             ',' => '',
@@ -83,15 +81,30 @@ class ManagementModule extends Module
             '(' => ''
         ]);
         $storage = explode('/', $storage);
-        
+
         $result['storage'] = [
             'current' => (int)$storage[0],
             'maximum' => (int)$storage[1]
         ];
-        
+
         return $result;
     }
-    
+
+    public function getAccounts()
+    {
+        $request = $this->getClient()->get('economy/exchange-market/');
+        $hxs = $request->send()->xpath();
+
+        return [
+            'cc' => (float)$hxs->find('//input[@id="eCash"][1]/@value')->extract(),
+            'gold' => (float)$hxs->find('//input[@id="golden"][1]/@value')->extract(),
+        ];
+    }
+
+    /**
+     * @return CompanyCollection
+     * @throws ScrapeException
+     */
     public function getCompanies()
     {
         $request = $this->getClient()->get('economy/myCompanies');
@@ -103,14 +116,17 @@ class ManagementModule extends Module
         if (!is_array($companies)) {
             throw new ScrapeException();
         }
-        
+
         foreach ($companies as $n => $company) {
             $companies[$n] = new Company($company);
         }
 
         return new CompanyCollection($companies);
     }
-    
+
+    /**
+     * @return array
+     */
     public function getTrainingGrounds()
     {
         $request = $this->getClient()->get('economy/training-grounds');
@@ -120,30 +136,28 @@ class ManagementModule extends Module
         $result = json_decode($matches[1], true);
         return $result;
     }
-    
-    public function getAccounts()
-    {
-        $request = $this->getClient()->get('economy/exchange-market/');
-        $hxs = $request->send()->xpath();
-        
-        return [
-            'cc'   => (float)$hxs->find('//input[@id="eCash"][1]/@value')->extract(),
-            'gold' => (float)$hxs->find('//input[@id="golden"][1]/@value')->extract(),
-        ];
-    }
 
+    /**
+     * @param bool $q1
+     * @param bool $q2
+     * @param bool $q3
+     * @param bool $q4
+     * @return array
+     */
     public function train($q1 = true, $q2 = false, $q3 = false, $q4 = false)
     {
         $grounds = $this->getTrainingGrounds();
 
-        $toTrain = array();
-        for ($i = 0; $i <= 3; $i++) {
-            if (${'q'.($i+1)} === true && $grounds[$i]['trained'] === false) {
-                $toTrain[] = array(
-                    'id' => (int)$grounds[$i]['id'],
-                    'train' => 1
-                );
+        $toTrain = [];
+        foreach ([$q1, $q2, $q3, $q4] as $i => $selection) {
+            if ($selection !== true || $grounds[$i]['trained'] === true) {
+                continue;
             }
+
+            $toTrain[] = [
+                'id' => (int)$grounds[$i]['id'],
+                'train' => 1
+            ];
         }
 
         $request = $this->getClient()->post('economy/train')->csrf()->xhr();
@@ -155,7 +169,31 @@ class ManagementModule extends Module
         return $request->send()->json();
     }
 
-    protected function work($postFields)
+    /**
+     * @return array
+     */
+    public function workAsEmployee()
+    {
+        return $this->work(['action_type' => 'work']);
+    }
+
+    /**
+     * @param WorkQueue $queue
+     * @return array
+     */
+    public function workAsManager(WorkQueue $queue)
+    {
+        return $this->work([
+            'companies' => $queue->toArray(),
+            'action_type' => 'production'
+        ]);
+    }
+
+    /**
+     * @param array $postFields
+     * @return array
+     */
+    protected function work(array $postFields)
     {
         $request = $this->getClient()->post('economy/work')->csrf()->xhr();
         $request->setRelativeReferer('economy/myCompanies');
@@ -163,19 +201,9 @@ class ManagementModule extends Module
         return $request->send()->json();
     }
 
-    public function workAsEmployee()
-    {
-        return $this->work(['action_type' => 'work']);
-    }
-
-    public function workAsManager(WorkQueue $queue)
-    {
-        return $this->work([
-            'companies'   => $queue->toArray(),
-            'action_type' => 'production'
-        ]);
-    }
-    
+    /**
+     * @return array
+     */
     public function getDailyTasksReward()
     {
         $request = $this->getClient()->get('main/daily-tasks-reward')->xhr();

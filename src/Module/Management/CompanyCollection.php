@@ -1,11 +1,7 @@
 <?php
 namespace Erpk\Harvester\Module\Management;
 
-use ArrayIterator;
-use Countable;
-use IteratorAggregate;
-
-class CompanyCollection implements Countable, IteratorAggregate
+class CompanyCollection implements \Countable, \IteratorAggregate
 {
     protected $original = [];
     protected $filtered = [];
@@ -23,7 +19,7 @@ class CompanyCollection implements Countable, IteratorAggregate
 
     public function getIterator()
     {
-        return new ArrayIterator($this->filtered);
+        return new \ArrayIterator($this->filtered);
     }
 
     /**

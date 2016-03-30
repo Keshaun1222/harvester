@@ -248,26 +248,21 @@ use Erpk\Harvester\Module\Media\Category;
 $press = new PressModule($client);
 
 // Create new article
-$article = $press->publishArticle(
+$articleId = $press->publishArticle(
     'Test article',
     'Article body',
+    35, // Country ID - Poland
     Category::FIRST_STEPS
 );
 
 // Edit existing article
 $press->editArticle(
-    $article,
+    $articleId,
     'Test article 2',
     'Another body',
     Category::BATTLE_ORDERS
 );
 
 // Remove article
-$press->deleteArticle($article);
-
-// Don't you have an Article object instance? Create new one from URL
-$article = Article::createFromUrl('http://www.erepublik.com/en/article/test-article-123456/1/20');
-
-// Access ID of article
-echo $article->getId(); // outputs "test-article-123456"
+$press->deleteArticle($articleId);
 ```

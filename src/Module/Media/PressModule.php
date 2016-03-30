@@ -14,43 +14,68 @@ use XPathSelector\Node;
 
 class PressModule extends Module
 {
-    public function publishArticle($articleName, $articleBody, Country $articleLocation, $articleCategory)
+    /**
+     * @var string
+     */
+    private static $articleIdPattern = '@article/(\d+)@';
+
+    /**
+     * @param string $articleName
+     * @param string $articleBody
+     * @param int|Country $articleLocation
+     * @param int $articleCategory
+     * @return int Article ID
+     * @throws ScrapeException
+     */
+    public function publishArticle($articleName, $articleBody, $articleLocation, $articleCategory)
     {
+        if ($articleLocation instanceof Country) {
+            $articleLocation = $articleLocation->getId();
+        }
+
         $request = $this->getClient()->post('main/write-article')->csrf();
         $request->setRelativeReferer('main/write-article');
         $request->addPostFields([
             'article_name' => $articleName,
             'article_body' => $articleBody,
-            'article_location' => $articleLocation->getId(),
+            'article_location' => $articleLocation,
             'article_category' => $articleCategory,
         ]);
         $response = $request->send();
 
-        if ($response->isRedirect()) {
-            return Article::createFromUrl($response->getLocation());
+        if (preg_match(self::$articleIdPattern, $response->getLocation(), $matches)) {
+            return (int)$matches[1];
         } else {
             throw new ScrapeException();
         }
     }
 
-    public function editArticle(Article $article, $articleName, $articleBody, $articleCategory)
+    /**
+     * @param int $articleId
+     * @param string $articleName
+     * @param string $articleBody
+     * @param int $articleCategory
+     */
+    public function editArticle($articleId, $articleName, $articleBody, $articleCategory)
     {
-        $request = $this->getClient()->post('main/edit-article/' . $article->getId())->csrf();
-        $request->setRelativeReferer('main/edit-article/' . $article->getId());
+        $url = "main/edit-article/$articleId";
+        $request = $this->getClient()->post($url)->csrf();
+        $request->setRelativeReferer($url);
         $request->addPostFields([
             'commit' => 'Edit',
             'article_name' => $articleName,
             'article_body' => $articleBody,
             'article_category' => $articleCategory,
         ]);
-        $response = $request->send();
-        return $response->getBody(true);
+        $request->send();
     }
 
-    public function deleteArticle(Article $article)
+    /**
+     * @param int $articleId
+     */
+    public function deleteArticle($articleId)
     {
-        $request = $this->getClient()->get('main/delete-article/' . $article->getId() . '/1');
-        $request->send();
+        $this->getClient()->get("main/delete-article/$articleId/1")->send();
     }
 
     /**
@@ -71,6 +96,10 @@ class PressModule extends Module
         }
     }
 
+    /**
+     * @param Node $xs
+     * @return array
+     */
     public static function parseArticleComments(Node $xs)
     {
         $comments = $xs->findAll('div[contains(concat(" ", normalize-space(@class), " "), " comment-holder ")]');
@@ -176,8 +205,17 @@ class PressModule extends Module
         return $list;
     }
 
+    /**
+     * @param int|Article $id
+     * @return array
+     * @throws NotFoundException
+     */
     public function getArticle($id)
     {
+        if ($id instanceof Article) {
+            $id = $id->getId();
+        }
+
         $url = $this->getClient()->get("article/$id/1/20")->send()->getLocation();
 
         if (stripos($url, 'article') === false) {
@@ -260,9 +298,16 @@ class PressModule extends Module
         return $article;
     }
 
+    /**
+     * @param int $id
+     * @param int|null $pageLimit
+     * @return array
+     * @throws NotFoundException
+     * @throws ScrapeException
+     */
     public function getNewspaper($id, $pageLimit = null)
     {
-        $response = $this->getClient()->get('newspaper/' . $id)->send();
+        $response = $this->getClient()->get("newspaper/$id")->send();
         if (!$response->isRedirect()) {
             throw new ScrapeException();
         }
@@ -272,8 +317,7 @@ class PressModule extends Module
             throw new NotFoundException("Newspaper ID:$id does not exist.");
         }
 
-        $newspaperUrl = $this->getClient()->getBaseUrl() . $location;
-        $xs = $this->getClient()->get($newspaperUrl)->send()->xpath();
+        $xs = $this->getClient()->get($location)->send()->xpath();
         $paginator = new Paginator($xs);
 
         $info = $xs->find('//div[@class="newspaper_head"]');
@@ -296,7 +340,7 @@ class PressModule extends Module
                 'name' => $director->find('@title')->extract()
             ],
             'name' => $info->find('//h1/a/@title')->extract(),
-            'url' => $newspaperUrl,
+            'url' => Uri::resolve($this->getClient()->getBaseUri(), $location),
             'avatar' => str_replace('55x55', '100x100', $avatar),
             'country' => $countries->findOneByName($info->find('div[1]/a[1]/img[2]/@title')->extract()),
             'subscribers' => (int)$info->find('div[@class="actions"]')->extract(),
@@ -323,14 +367,14 @@ class PressModule extends Module
                     $category = null;
                 }
 
-                $result['articles'][] = array(
+                $result['articles'][] = [
                     'title' => $title,
                     'url' => $artUrl,
                     'votes' => (int)$votes,
                     'comments' => (int)$comments,
                     'date' => self::parseDate($date),
                     'category' => $category
-                );
+                ];
             }
         }
 

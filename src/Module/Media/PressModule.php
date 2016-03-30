@@ -206,16 +206,12 @@ class PressModule extends Module
     }
 
     /**
-     * @param int|Article $id
+     * @param int $id
      * @return array
      * @throws NotFoundException
      */
     public function getArticle($id)
     {
-        if ($id instanceof Article) {
-            $id = $id->getId();
-        }
-
         $url = $this->getClient()->get("article/$id/1/20")->send()->getLocation();
 
         if (stripos($url, 'article') === false) {

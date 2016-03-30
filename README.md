@@ -242,7 +242,6 @@ $module->sendMessage(
 ###Media
 ```php
 use Erpk\Harvester\Module\Media\PressModule;
-use Erpk\Harvester\Module\Media\Article;
 use Erpk\Harvester\Module\Media\Category;
 
 $press = new PressModule($client);

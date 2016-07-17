@@ -124,7 +124,7 @@ class CitizenModule extends Module
 
         $military = function ($eliteCitizen) use ($content, $parseStat) {
             $arr = [];
-            $str = $content->find('//div[@class="citizen_military_box"][1]/span[2]')->extract();
+            $str = $content->find('//div[@class="citizen_military_box"][2]/span[2]')->extract();
             $arr['strength'] = (float)str_ireplace(',', '', trim($str));
             $arr['rank'] = new Rank($parseStat($content->find('//span[@class="rank_numbers"]')->extract(), true));
             $arr['base_hit'] = Helpers::getHit(

@@ -3,6 +3,7 @@ namespace Erpk\Harvester\Module\Citizen;
 
 use Erpk\Common\Citizen\Helpers;
 use Erpk\Common\Citizen\Rank;
+use Erpk\Common\Citizen\AirRank;
 use Erpk\Common\DateTime;
 use Erpk\Common\Entity\Country;
 use Erpk\Common\Entity\Region;
@@ -125,6 +126,7 @@ class CitizenModule extends Module
         $military = function ($eliteCitizen) use ($content, $parseStat) {
             $arr = [];
             $str = $content->find('//div[@class="citizen_military_box"][2]/span[2]')->extract();
+            $perc = $content->find('//div[@class="citizen_military_box"[5]/span[2]')->extract();
             $arr['strength'] = (float)str_ireplace(',', '', trim($str));
             $arr['rank'] = new Rank($parseStat($content->find('//span[@class="rank_numbers"]')->extract(), true));
             $arr['base_hit'] = Helpers::getHit(
@@ -133,6 +135,8 @@ class CitizenModule extends Module
                 0,
                 $eliteCitizen
             );
+            $arr['perception'] = (float)str_ireplace(',', '', trim($perc));
+            $arr['air_rank'] = new AirRank($parseStat($content->find('//div[@class="citizen_military_box_wide"][2]/span[2]/span[@class="rank_numbers"]')->extract(), true));
             return $arr;
         };
         $guerrilla = function () use ($content) {
